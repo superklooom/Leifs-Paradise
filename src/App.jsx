@@ -70,7 +70,9 @@ export default function App() {
       if (bVal === null || bVal === undefined) return -1
       const cmp = typeof aVal === 'number'
         ? aVal - bVal
-        : String(aVal).localeCompare(String(bVal))
+        : sortKey === 'dahliaNumber'
+          ? Number(aVal) - Number(bVal)
+          : String(aVal).localeCompare(String(bVal))
       return sortDir === 'asc' ? cmp : -cmp
     })
   }, [filtered, sortKey, sortDir])

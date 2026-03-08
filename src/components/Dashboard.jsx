@@ -176,8 +176,8 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
               <YAxis
                 type="category"
                 dataKey="name"
-                width={100}
-                tick={{ fontSize: 13 }}
+                width={110}
+                tick={{ fontSize: 14, fontWeight: 700 }}
                 tickLine={false}
                 axisLine={false}
               />
@@ -214,7 +214,7 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
             >
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 14, fontWeight: 700 }}
                 tickLine={false}
                 axisLine={false}
               />
