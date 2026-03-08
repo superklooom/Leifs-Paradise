@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useDahlias } from './hooks/useDahlias'
 import FilterBar from './components/FilterBar'
+import Dashboard from './components/Dashboard'
 import DahliaCard from './components/DahliaCard'
 import DahliaTable from './components/DahliaTable'
 import './App.css'
@@ -88,7 +89,7 @@ export default function App() {
           <div className="app-header__title">
             <span className="app-header__icon">🌸</span>
             <div>
-              <h1>Dahlias Garden</h1>
+              <h1>Leif's Paradise</h1>
               <p>{varieties.length} varieties · {totalTubers} tubers total</p>
             </div>
           </div>
@@ -120,6 +121,12 @@ export default function App() {
             filteredCount={filtered.length}
             view={view}
             onViewChange={setView}
+          />
+
+          <Dashboard
+            varieties={varieties}
+            filters={filters}
+            onFilterChange={handleFilterChange}
           />
 
           <main className="app-main">
