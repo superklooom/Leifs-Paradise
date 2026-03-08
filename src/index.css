@@ -1,0 +1,26 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f5f3ef;
+  color: #2d2d2d;
+  min-height: 100vh;
+}
+
+:root {
+  --green-dark: #2d5a27;
+  --green-mid: #4a7c3f;
+  --green-light: #e8f0e6;
+  --rose: #c75b7a;
+  --rose-light: #fce8ef;
+  --card-bg: #ffffff;
+  --border: #e2ddd8;
+  --text-muted: #7a7570;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-hover: 0 6px 20px rgba(0,0,0,0.14);
+  --radius: 12px;
+}

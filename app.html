@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leif's Paradise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-dark: #2d5a27;
+      --green-mid: #4a7c3f;
+      --green-light: #e8f0e6;
+      --rose: #c75b7a;
+      --rose-light: #fce8ef;
+      --card-bg: #ffffff;
+      --border: #e2ddd8;
+      --text: #2d2d2d;
+      --text-muted: #7a7570;
+      --bg: #f5f3ef;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --shadow-hover: 0 6px 20px rgba(0,0,0,0.14);
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ---- HEADER ---- */
+    .header {
+      background: var(--green-dark);
+      color: #fff;
+      padding: 18px 24px;
+    }
+    .header__inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header__icon { font-size: 36px; line-height: 1; }
+    .header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+    .header p { font-size: 13px; opacity: 0.7; margin-top: 2px; }
+
+    /* ---- FILTER BAR ---- */
+    .filter-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .filter-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      max-width: 360px;
+      min-width: 200px;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 8px 32px 8px 32px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #faf9f7;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-wrap input:focus { border-color: var(--green-mid); background: #fff; }
+    .search-icon {
+      position: absolute;
+      left: 10px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .search-clear {
+      position: absolute;
+      right: 8px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      cursor: pointer; color: var(--text-muted);
+      font-size: 13px; padding: 2px 4px;
+      display: none;
+    }
+
+    .filter-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+    .btn-clear-all {
+      padding: 7px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+    }
+    .btn-clear-all:hover { border-color: var(--rose); color: var(--rose); }
+
+    .view-toggle {
+      display: flex;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .view-toggle button {
+      padding: 6px 13px;
+      border: none;
+      background: #fff;
+      cursor: pointer;
+      font-size: 17px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      line-height: 1;
+    }
+    .view-toggle button:first-child { border-right: 1.5px solid var(--border); }
+    .view-toggle button.active { background: var(--green-light); color: var(--green-dark); }
+
+    /* Filter groups */
+    .filter-groups {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 6px; }
+    .filter-group label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px 4px 7px;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      background: #fff;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .chip:hover { border-color: var(--green-mid); background: var(--green-light); }
+    .chip.active { border-color: var(--green-dark); background: var(--green-light); color: var(--green-dark); font-weight: 600; }
+    .chip .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.12);
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    /* Height slider group */
+    .filter-group--height { min-width: 220px; }
+    .height-label-row { display: flex; align-items: center; gap: 8px; }
+    .height-val { font-weight: 700; color: var(--green-dark); font-size: 12px; }
+    .height-sliders { display: flex; flex-direction: column; gap: 4px; }
+    .height-sliders input[type=range] { width: 100%; accent-color: var(--green-dark); }
+
+    /* Results count */
+    .filter-results {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .filter-results .filtered { color: var(--rose); }
+
+    /* ---- MAIN ---- */
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px 24px 60px;
+    }
+
+    .results-summary {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* ---- CARD GRID ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s, transform 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+
+    .card__swatch { height: 72px; width: 100%; flex-shrink: 0; }
+
+    .card__body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+    .card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+
+    .card__name { font-size: 14px; font-weight: 600; line-height: 1.3; color: #1a1a1a; }
+
+    .card__count {
+      font-size: 12px; font-weight: 700;
+      color: var(--green-dark);
+      background: var(--green-light);
+      border-radius: 20px;
+      padding: 2px 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .card__colors { display: flex; flex-wrap: wrap; gap: 4px; }
+    .color-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: #f5f3ef;
+      border-radius: 12px;
+      padding: 2px 7px 2px 4px;
+    }
+    .color-tag .dot { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.12); flex-shrink: 0; }
+
+    .card__meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+    .type-badge {
+      font-size: 11px; font-weight: 600;
+      color: var(--rose); background: var(--rose-light);
+      border-radius: 6px; padding: 2px 8px;
+    }
+    .height-badge { font-size: 11px; color: var(--text-muted); }
+    .card__numbers { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+    .card__numbers span { font-weight: 500; color: var(--text); }
+
+    /* ---- TABLE ---- */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--border);
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { background: var(--green-light); border-bottom: 2px solid var(--border); }
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--green-dark);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    th:hover { background: #d4e8d0; }
+    th.sort-active { background: #c4dcc0; }
+    .sort-arrow { opacity: 0.5; font-size: 10px; }
+
+    td { padding: 11px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #faf9f7; }
+
+    .td-name { font-weight: 600; color: #1a1a1a; min-width: 160px; }
+    .td-height { color: var(--text-muted); text-align: right; min-width: 90px; }
+    .td-count { text-align: center; }
+    .count-badge {
+      font-size: 12px; font-weight: 700;
+      color: var(--green-dark); background: var(--green-light);
+      border-radius: 20px; padding: 2px 10px;
+    }
+
+    /* ---- STATES ---- */
+    .state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 80px 24px;
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+    .state--error { color: #c0392b; }
+    .state--empty { flex-direction: column; gap: 8px; }
+    .state--empty .empty-icon { font-size: 40px; opacity: 0.4; }
+
+    .spinner {
+      width: 22px; height: 22px;
+      border: 3px solid var(--border);
+      border-top-color: var(--green-dark);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---- DASHBOARD ---- */
+    .dashboard {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 28px 24px 24px;
+    }
+    .dashboard__inner {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .dashboard__title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+    .dashboard__charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .chart-card {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px 16px;
+    }
+    .chart-card__title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin-bottom: 14px;
+    }
+    .chart-card__body {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    /* Pie */
+    .pie-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 11px;
+      min-width: 0;
+      flex: 1;
+    }
+    .pie-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pie-legend-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .pie-legend-label { color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+    .pie-legend-val { color: var(--text-muted); margin-left: auto; padding-left: 6px; flex-shrink: 0; }
+    /* Bar / Histogram */
+    .bar-chart { width: 100%; }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+      font-size: 11px;
+    }
+    .bar-label { width: 90px; flex-shrink: 0; color: var(--text); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track { flex: 1; background: #e8e4de; border-radius: 4px; height: 18px; position: relative; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .bar-val { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 600; color: rgba(0,0,0,0.45); }
+    /* Histogram */
+    .histogram-wrap { width: 100%; overflow-x: auto; }
+    .histogram-svg { display: block; }
+    /* Dashboard interactivity */
+    .pie-slice, .pie-legend-item, .bar-row, .hist-bar { cursor: pointer; transition: opacity 0.15s; }
+    .pie-legend-item { border-radius: 6px; padding: 2px 4px; transition: background 0.15s, opacity 0.15s; }
+    .pie-legend-item:hover { background: var(--green-light); }
+    .bar-row:hover .bar-track { outline: 2px solid var(--green-dark); border-radius: 4px; }
+    .chart-dim { opacity: 0.25 !important; }
+    .chart-active-legend { background: var(--green-light) !important; font-weight: 600; }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 600px) {
+      .filter-bar { padding: 10px 14px 8px; }
+      .main { padding: 16px 14px 40px; }
+      .header { padding: 14px; }
+      .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header__inner">
+    <span class="header__icon">🌸</span>
+    <div>
+      <h1>Leif's Paradise</h1>
+      <p id="header-summary">Loading…</p>
+    </div>
+  </div>
+</header>
+
+<section class="dashboard" id="dashboard" style="display:none">
+  <div class="dashboard__inner">
+    <div class="dashboard__title">Garden at a Glance</div>
+    <div class="dashboard__charts">
+      <div class="chart-card">
+        <div class="chart-card__title">🎨 Tubers by Color</div>
+        <div class="chart-card__body" id="chart-color"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card__title">🌸 Varieties by Type</div>
+        <div id="chart-type" class="bar-chart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card__title">↕ Varieties by Height</div>
+        <div class="histogram-wrap" id="chart-height"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="filter-bar" id="filter-bar" style="display:none">
+  <div class="filter-top">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search" placeholder="Search by name or number…" autocomplete="off" />
+      <button class="search-clear" id="search-clear" title="Clear search">✕</button>
+    </div>
+    <div class="filter-actions">
+      <button class="btn-clear-all" id="btn-clear-all">Clear filters</button>
+      <div class="view-toggle">
+        <button id="btn-grid" class="active" title="Card view">⊞</button>
+        <button id="btn-table" title="Table view">☰</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-groups">
+    <div class="filter-group">
+      <label>Color</label>
+      <div class="chips" id="color-chips"></div>
+    </div>
+    <div class="filter-group">
+      <label>Type</label>
+      <div class="chips" id="type-chips"></div>
+    </div>
+    <div class="filter-group filter-group--height">
+      <div class="height-label-row">
+        <label>Height (cm)</label>
+        <span class="height-val" id="height-val"></span>
+      </div>
+      <div class="height-sliders">
+        <input type="range" id="height-min" min="0" max="200" step="5" />
+        <input type="range" id="height-max" min="0" max="200" step="5" />
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-results" id="filter-results"></div>
+</div>
+
+<main class="main" id="main">
+  <div class="state" id="loading-state">
+    <div class="spinner"></div>
+    Loading your dahlias…
+  </div>
+  <div class="state state--error" id="error-state" style="display:none"></div>
+  <div id="results-summary" class="results-summary" style="display:none"></div>
+  <div id="grid-view" style="display:none"></div>
+  <div id="table-view" style="display:none"></div>
+  <div class="state state--empty" id="empty-state" style="display:none">
+    <span class="empty-icon">🌿</span>
+    <span>No dahlias match the current filters.</span>
+  </div>
+</main>
+
+<script>
+const SHEET_ID = '1wfbgTeYJrD1O9oOOVBTNxEjAyMZidPbWDRB4PTGHpiw'
+
+const COLOR_HEX = {
+  'Red': '#c0392b', 'Pink': '#e91e8c', 'Orange': '#e67e22',
+  'Yellow': '#f1c40f', 'White': '#f0ece4', 'Purple': '#8e44ad',
+  'Lavender': '#c39bd3', 'Burgundy': '#6c1f2e', 'Salmon': '#fa8072',
+  'Coral': '#ff6b6b', 'Peach': '#ffcba4', 'Cream': '#fff8dc',
+  'Violet': '#7f00ff', 'Lilac': '#c8a2c8', 'Magenta': '#c2185b',
+  'Dark Red': '#8b0000', 'Dark Pink': '#e75480',
+}
+
+function getColorHex(name) {
+  if (COLOR_HEX[name]) return COLOR_HEX[name]
+  const lower = name.toLowerCase()
+  for (const [k, v] of Object.entries(COLOR_HEX)) {
+    if (lower.includes(k.toLowerCase())) return v
+  }
+  return '#bbb'
+}
+
+function colorStrip(colors) {
+  if (!colors.length) return '#ccc'
+  if (colors.length === 1) return getColorHex(colors[0])
+  const stops = colors.map((c, i) => {
+    const pct = Math.round((i / (colors.length - 1)) * 100)
+    return `${getColorHex(c)} ${pct}%`
+  })
+  return `linear-gradient(135deg, ${stops.join(', ')})`
+}
+
+// ---- DATA LOADING ----
+async function loadData() {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`
+  const res = await fetch(url)
+  const text = await res.text()
+  const json = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1))
+
+  const cols = json.table.cols.map(c => c.label)
+  const rows = json.table.rows
+    .filter(r => r && r.c)
+    .map(r => {
+      const obj = {}
+      r.c.forEach((cell, i) => { obj[cols[i]] = cell ? (cell.f ?? cell.v) : null })
+      return obj
+    })
+
+  // Group by variety
+  const groups = {}
+  rows.forEach(row => {
+    const name = row['Name']?.trim()
+    if (!name) return
+    if (!groups[name]) {
+      const rawColors = row['Colors'] || ''
+      groups[name] = {
+        name,
+        height: row['Height (cm)'] !== null ? Number(row['Height (cm)']) : null,
+        colors: rawColors.split(',').map(c => c.trim()).filter(Boolean),
+        type: row['Type']?.trim() || null,
+        count: 0,
+        numbers: [],
+      }
+    }
+    groups[name].count++
+    if (row['Dahlia Number'] !== null) groups[name].numbers.push(row['Dahlia Number'])
+  })
+  return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name))
+}
+
+// ---- APP STATE ----
+let allVarieties = []
+let filters = { search: '', colors: new Set(), types: new Set(), heightMin: null, heightMax: null }
+let view = 'grid'
+let sortKey = 'name'
+let sortDir = 'asc'
+let heightRange = { min: 0, max: 200 }
+
+// ---- FILTER LOGIC ----
+function applyFilters() {
+  const minH = filters.heightMin ?? heightRange.min
+  const maxH = filters.heightMax ?? heightRange.max
+
+  return allVarieties.filter(v => {
+    if (filters.search) {
+      const q = filters.search.toLowerCase()
+      const matchesName = v.name.toLowerCase().includes(q)
+      const matchesNumber = v.numbers.some(n => String(n).includes(q))
+      if (!matchesName && !matchesNumber) return false
+    }
+    if (filters.colors.size > 0) {
+      if (!v.colors.some(c => filters.colors.has(c))) return false
+    }
+    if (filters.types.size > 0) {
+      if (!filters.types.has(v.type)) return false
+    }
+    if (v.height !== null) {
+      if (v.height < minH || v.height > maxH) return false
+    }
+    return true
+  })
+}
+
+function sortVarieties(list) {
+  return [...list].sort((a, b) => {
+    let av = a[sortKey], bv = b[sortKey]
+    if (sortKey === 'colors') { av = a.colors.join(', '); bv = b.colors.join(', ') }
+    if (sortKey === 'numbers') {
+      av = a.numbers.length ? Math.min(...a.numbers) : Infinity
+      bv = b.numbers.length ? Math.min(...b.numbers) : Infinity
+    }
+    if (av == null) return 1
+    if (bv == null) return -1
+    const cmp = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv))
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+}
+
+// ---- RENDER ----
+function render() {
+  updateDashboardHighlights()
+  const filtered = applyFilters()
+  const sorted = sortVarieties(filtered)
+
+  const totalTubers = allVarieties.reduce((s, v) => s + v.count, 0)
+  const filteredTubers = filtered.reduce((s, v) => s + v.count, 0)
+  const hasActiveFilters = filters.search || filters.colors.size || filters.types.size
+    || filters.heightMin !== null || filters.heightMax !== null
+
+  // Header summary
+  document.getElementById('header-summary').textContent =
+    `${allVarieties.length} varieties · ${totalTubers} tubers total`
+
+  // Results summary
+  const summary = document.getElementById('results-summary')
+  summary.style.display = 'block'
+  summary.textContent = `${filtered.length} ${filtered.length === 1 ? 'variety' : 'varieties'} · ${filteredTubers} tubers`
+
+  // Filter results count
+  document.getElementById('filter-results').innerHTML =
+    `Showing <strong>${filtered.length}</strong> of <strong>${allVarieties.length}</strong> varieties`
+    + (hasActiveFilters ? ' <span class="filtered">(filtered)</span>' : '')
+
+  // Clear all button visibility
+  document.getElementById('btn-clear-all').style.display = hasActiveFilters ? '' : 'none'
+
+  // Active state on chips
+  document.querySelectorAll('#color-chips .chip').forEach(el => {
+    el.classList.toggle('active', filters.colors.has(el.dataset.value))
+  })
+  document.querySelectorAll('#type-chips .chip').forEach(el => {
+    el.classList.toggle('active', filters.types.has(el.dataset.value))
+  })
+
+  // Empty state
+  const emptyState = document.getElementById('empty-state')
+  const gridView = document.getElementById('grid-view')
+  const tableView = document.getElementById('table-view')
+
+  if (sorted.length === 0) {
+    emptyState.style.display = 'flex'
+    gridView.style.display = 'none'
+    tableView.style.display = 'none'
+    return
+  }
+  emptyState.style.display = 'none'
+
+  if (view === 'grid') {
+    gridView.style.display = ''
+    tableView.style.display = 'none'
+    renderGrid(sorted, gridView)
+  } else {
+    gridView.style.display = 'none'
+    tableView.style.display = ''
+    renderTable(sorted, tableView)
+  }
+}
+
+function renderGrid(varieties, container) {
+  container.innerHTML = `<div class="grid">${varieties.map(v => `
+    <div class="card">
+      <div class="card__swatch" style="background:${colorStrip(v.colors)}"></div>
+      <div class="card__body">
+        <div class="card__header">
+          <div class="card__name">${esc(v.name)}</div>
+          <span class="card__count">×${v.count}</span>
+        </div>
+        <div class="card__colors">
+          ${v.colors.map(c => `
+            <span class="color-tag">
+              <span class="dot" style="background:${getColorHex(c)}"></span>${esc(c)}
+            </span>`).join('')}
+        </div>
+        <div class="card__meta">
+          ${v.type ? `<span class="type-badge">${esc(v.type)}</span>` : ''}
+          ${v.height != null ? `<span class="height-badge">↕ ${v.height} cm</span>` : ''}
+        </div>
+        ${v.numbers.length ? `<div class="card__numbers">#<span>${v.numbers.join(', ')}</span></div>` : ''}
+      </div>
+    </div>`).join('')}</div>`
+}
+
+function renderTable(varieties, container) {
+  function sortHeader(col, label) {
+    const active = sortKey === col
+    const arrow = active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ' <span class="sort-arrow">↕</span>'
+    return `<th data-col="${col}" class="${active ? 'sort-active' : ''}">${label}${arrow}</th>`
+  }
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            ${sortHeader('name', 'Variety')}
+            ${sortHeader('colors', 'Colors')}
+            ${sortHeader('type', 'Type')}
+            ${sortHeader('height', 'Height (cm)')}
+            ${sortHeader('count', 'Tubers')}
+            ${sortHeader('numbers', 'Numbers')}
+          </tr>
+        </thead>
+        <tbody>
+          ${varieties.map(v => `<tr>
+            <td class="td-name">${esc(v.name)}</td>
+            <td>${v.colors.map(c => `
+              <span class="color-tag">
+                <span class="dot" style="background:${getColorHex(c)}"></span>${esc(c)}
+              </span>`).join('')}</td>
+            <td>${v.type ? `<span class="type-badge">${esc(v.type)}</span>` : '—'}</td>
+            <td class="td-height">${v.height ?? '—'}</td>
+            <td class="td-count"><span class="count-badge">×${v.count}</span></td>
+            <td style="font-size:12px;color:var(--text-muted)">${v.numbers.join(', ') || '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`
+
+  // Sort click
+  container.querySelectorAll('th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col
+      if (sortKey === col) { sortDir = sortDir === 'asc' ? 'desc' : 'asc' }
+      else { sortKey = col; sortDir = 'asc' }
+      render()
+    })
+  })
+}
+
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+// ---- INIT FILTERS UI ----
+function initFilterUI() {
+  const allColors = [...new Set(allVarieties.flatMap(v => v.colors))].sort()
+  const allTypes = [...new Set(allVarieties.map(v => v.type).filter(Boolean))].sort()
+  const heights = allVarieties.map(v => v.height).filter(h => h !== null)
+  heightRange = { min: Math.min(...heights), max: Math.max(...heights) }
+
+  // Color chips
+  const colorChips = document.getElementById('color-chips')
+  colorChips.innerHTML = allColors.map(c => `
+    <button class="chip" data-value="${esc(c)}">
+      <span class="dot" style="background:${getColorHex(c)}"></span>${esc(c)}
+    </button>`).join('')
+  colorChips.addEventListener('click', e => {
+    const chip = e.target.closest('.chip')
+    if (!chip) return
+    const val = chip.dataset.value
+    if (filters.colors.has(val)) filters.colors.delete(val)
+    else filters.colors.add(val)
+    render()
+  })
+
+  // Type chips
+  const typeChips = document.getElementById('type-chips')
+  typeChips.innerHTML = allTypes.map(t => `
+    <button class="chip" data-value="${esc(t)}">${esc(t)}</button>`).join('')
+  typeChips.addEventListener('click', e => {
+    const chip = e.target.closest('.chip')
+    if (!chip) return
+    const val = chip.dataset.value
+    if (filters.types.has(val)) filters.types.delete(val)
+    else filters.types.add(val)
+    render()
+  })
+
+  // Height sliders
+  const minSlider = document.getElementById('height-min')
+  const maxSlider = document.getElementById('height-max')
+  const heightVal = document.getElementById('height-val')
+
+  minSlider.min = maxSlider.min = heightRange.min
+  minSlider.max = maxSlider.max = heightRange.max
+  minSlider.value = heightRange.min
+  maxSlider.value = heightRange.max
+
+  function updateHeightLabel() {
+    const lo = Math.min(Number(minSlider.value), Number(maxSlider.value))
+    const hi = Math.max(Number(minSlider.value), Number(maxSlider.value))
+    heightVal.textContent = `${lo}–${hi} cm`
+    filters.heightMin = lo <= heightRange.min ? null : lo
+    filters.heightMax = hi >= heightRange.max ? null : hi
+    render()
+  }
+  minSlider.addEventListener('input', updateHeightLabel)
+  maxSlider.addEventListener('input', updateHeightLabel)
+  updateHeightLabel()
+
+  // Search
+  const searchInput = document.getElementById('search')
+  const searchClear = document.getElementById('search-clear')
+  searchInput.addEventListener('input', () => {
+    filters.search = searchInput.value
+    searchClear.style.display = filters.search ? '' : 'none'
+    render()
+  })
+  searchClear.addEventListener('click', () => {
+    searchInput.value = ''
+    filters.search = ''
+    searchClear.style.display = 'none'
+    render()
+  })
+
+  // Clear all
+  document.getElementById('btn-clear-all').addEventListener('click', () => {
+    filters.search = ''; filters.colors.clear(); filters.types.clear()
+    filters.heightMin = null; filters.heightMax = null
+    searchInput.value = ''; searchClear.style.display = 'none'
+    minSlider.value = heightRange.min; maxSlider.value = heightRange.max
+    updateHeightLabel()
+    render()
+  })
+
+  // View toggle
+  document.getElementById('btn-grid').addEventListener('click', () => {
+    view = 'grid'
+    document.getElementById('btn-grid').classList.add('active')
+    document.getElementById('btn-table').classList.remove('active')
+    render()
+  })
+  document.getElementById('btn-table').addEventListener('click', () => {
+    view = 'table'
+    document.getElementById('btn-table').classList.add('active')
+    document.getElementById('btn-grid').classList.remove('active')
+    render()
+  })
+}
+
+// ---- DASHBOARD CHARTS ----
+let histogramBuckets = []
+
+function renderDashboard() {
+  renderColorPie()
+  renderTypeBar()
+  renderHeightHistogram()
+  document.getElementById('dashboard').style.display = ''
+}
+
+function renderColorPie() {
+  const counts = {}
+  allVarieties.forEach(v => {
+    v.colors.forEach(c => { counts[c] = (counts[c] || 0) + v.count })
+  })
+  let data = Object.entries(counts).sort((a, b) => b[1] - a[1])
+  if (data.length > 8) {
+    const top = data.slice(0, 7)
+    const other = data.slice(7).reduce((s, [, v]) => s + v, 0)
+    data = [...top, ['Other', other]]
+  }
+  const total = data.reduce((s, [, v]) => s + v, 0)
+
+  const SIZE = 130, cx = SIZE / 2, cy = SIZE / 2, r = 52, hole = 28
+  let angle = -90
+  const slices = data.map(([label, val]) => {
+    const deg = (val / total) * 360
+    const start = angle
+    angle += deg
+    return { label, val, start, end: angle, color: getColorHex(label) }
+  })
+
+  function arc(startDeg, endDeg) {
+    const toRad = d => (d * Math.PI) / 180
+    const x1 = cx + r * Math.cos(toRad(startDeg))
+    const y1 = cy + r * Math.sin(toRad(startDeg))
+    const x2 = cx + r * Math.cos(toRad(endDeg))
+    const y2 = cy + r * Math.sin(toRad(endDeg))
+    const xi1 = cx + hole * Math.cos(toRad(startDeg))
+    const yi1 = cy + hole * Math.sin(toRad(startDeg))
+    const xi2 = cx + hole * Math.cos(toRad(endDeg))
+    const yi2 = cy + hole * Math.sin(toRad(endDeg))
+    const large = endDeg - startDeg > 180 ? 1 : 0
+    return `M ${xi1} ${yi1} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${hole} ${hole} 0 ${large} 0 ${xi1} ${yi1} Z`
+  }
+
+  const paths = slices.map(s =>
+    `<path class="pie-slice" data-color="${esc(s.label)}" d="${arc(s.start, s.end)}"
+       fill="${s.color}" stroke="#fff" stroke-width="1.5">
+      <title>${esc(s.label)}: ${s.val} tubers — click to filter</title>
+    </path>`
+  ).join('')
+
+  const svg = `<svg width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}" class="histogram-svg" style="flex-shrink:0">${paths}</svg>`
+
+  const legend = `<div class="pie-legend">${slices.map(s => `
+    <div class="pie-legend-item" data-color="${esc(s.label)}" title="${esc(s.label)}: ${s.val} — click to filter">
+      <span class="pie-legend-dot" style="background:${s.color}"></span>
+      <span class="pie-legend-label">${esc(s.label)}</span>
+      <span class="pie-legend-val">${s.val}</span>
+    </div>`).join('')}</div>`
+
+  const container = document.getElementById('chart-color')
+  container.innerHTML = svg + legend
+
+  container.addEventListener('click', e => {
+    const el = e.target.closest('[data-color]')
+    if (!el) return
+    const color = el.dataset.color
+    if (color === 'Other') return
+    if (filters.colors.has(color)) filters.colors.delete(color)
+    else filters.colors.add(color)
+    updateDashboardHighlights()
+    render()
+  })
+}
+
+function renderTypeBar() {
+  const counts = {}
+  allVarieties.forEach(v => {
+    const t = v.type || 'Unknown'
+    counts[t] = (counts[t] || 0) + 1
+  })
+  const data = Object.entries(counts).sort((a, b) => b[1] - a[1])
+  const max = data[0][1]
+  const COLORS = ['#4a7c3f','#6aab5e','#2d5a27','#8bc34a','#c5e1a5','#33691e','#9ccc65','#558b2f']
+
+  const container = document.getElementById('chart-type')
+  container.innerHTML = data.map(([label, val], i) => `
+    <div class="bar-row" data-type="${esc(label)}" title="${esc(label)}: ${val} varieties — click to filter">
+      <div class="bar-label">${esc(label)}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.round((val/max)*100)}%;background:${COLORS[i % COLORS.length]}"></div>
+        <span class="bar-val">${val}</span>
+      </div>
+    </div>`).join('')
+
+  container.addEventListener('click', e => {
+    const row = e.target.closest('[data-type]')
+    if (!row) return
+    const type = row.dataset.type
+    if (filters.types.has(type)) filters.types.delete(type)
+    else filters.types.add(type)
+    updateDashboardHighlights()
+    render()
+  })
+}
+
+function renderHeightHistogram() {
+  const heights = allVarieties.map(v => v.height).filter(h => h !== null)
+  if (!heights.length) return
+
+  const minH = Math.min(...heights)
+  const maxH = Math.max(...heights)
+  const step = 20
+  const bucketStart = Math.floor(minH / step) * step
+
+  histogramBuckets = []
+  for (let lo = bucketStart; lo <= maxH; lo += step) {
+    const hi = lo + step
+    const count = heights.filter(h => h >= lo && h < hi).length
+    histogramBuckets.push({ lo, hi, label: `${lo}–${hi}`, count })
+  }
+
+  const maxCount = Math.max(...histogramBuckets.map(b => b.count))
+  const W = Math.max(280, histogramBuckets.length * 52)
+  const H = 120
+  const padL = 28, padB = 28, padT = 10
+  const chartW = W - padL
+  const chartH = H - padB - padT
+  const bw = Math.floor(chartW / histogramBuckets.length)
+  const gap = 4
+
+  const bars = histogramBuckets.map((b, i) => {
+    const bh = maxCount ? Math.round((b.count / maxCount) * chartH) : 0
+    const x = padL + i * bw + gap / 2
+    const y = padT + chartH - bh
+    return `
+      <rect class="hist-bar" data-lo="${b.lo}" data-hi="${b.hi}"
+        x="${x}" y="${y}" width="${bw - gap}" height="${bh}" fill="#4a7c3f" rx="3">
+        <title>${b.label} cm: ${b.count} varieties — click to filter</title>
+      </rect>
+      ${b.count > 0 ? `<text x="${x + (bw-gap)/2}" y="${y - 3}" text-anchor="middle" font-size="9" fill="#4a7c3f" font-weight="600">${b.count}</text>` : ''}
+      <text x="${x + (bw-gap)/2}" y="${H - 8}" text-anchor="middle" font-size="9" fill="#7a7570">${b.label}</text>`
+  }).join('')
+
+  const ticks = [0, Math.round(maxCount / 2), maxCount].map(v => {
+    const y = padT + chartH - (maxCount ? Math.round((v / maxCount) * chartH) : 0)
+    return `<text x="${padL - 4}" y="${y + 3}" text-anchor="end" font-size="9" fill="#7a7570">${v}</text>
+            <line x1="${padL}" y1="${y}" x2="${W}" y2="${y}" stroke="#e2ddd8" stroke-width="1"/>`
+  }).join('')
+
+  const container = document.getElementById('chart-height')
+  container.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="histogram-svg">${ticks}${bars}</svg>`
+
+  container.addEventListener('click', e => {
+    const bar = e.target.closest('.hist-bar')
+    if (!bar) return
+    const lo = Number(bar.dataset.lo), hi = Number(bar.dataset.hi)
+    // Toggle: if this bucket is already the active filter, clear it
+    if (filters.heightMin === lo && filters.heightMax === hi) {
+      filters.heightMin = null
+      filters.heightMax = null
+      document.getElementById('height-min').value = heightRange.min
+      document.getElementById('height-max').value = heightRange.max
+    } else {
+      filters.heightMin = lo
+      filters.heightMax = hi
+      document.getElementById('height-min').value = lo
+      document.getElementById('height-max').value = hi
+    }
+    // Sync height label
+    const effMin = filters.heightMin ?? heightRange.min
+    const effMax = filters.heightMax ?? heightRange.max
+    document.getElementById('height-val').textContent = `${effMin}–${effMax} cm`
+    updateDashboardHighlights()
+    render()
+  })
+}
+
+function updateDashboardHighlights() {
+  if (!document.querySelector('.pie-slice')) return
+  // --- Pie: dim unselected slices/legend when any color filter active ---
+  const anyColor = filters.colors.size > 0
+  document.querySelectorAll('.pie-slice').forEach(el => {
+    const c = el.dataset.color
+    el.classList.toggle('chart-dim', anyColor && !filters.colors.has(c))
+  })
+  document.querySelectorAll('#chart-color .pie-legend-item').forEach(el => {
+    const c = el.dataset.color
+    el.classList.toggle('chart-dim', anyColor && !filters.colors.has(c))
+    el.classList.toggle('chart-active-legend', anyColor && filters.colors.has(c))
+  })
+
+  // --- Type bars: dim unselected ---
+  const anyType = filters.types.size > 0
+  document.querySelectorAll('#chart-type .bar-row').forEach(el => {
+    const t = el.dataset.type
+    el.classList.toggle('chart-dim', anyType && !filters.types.has(t))
+  })
+
+  // --- Height bars: highlight selected bucket ---
+  document.querySelectorAll('.hist-bar').forEach(el => {
+    const lo = Number(el.dataset.lo), hi = Number(el.dataset.hi)
+    const isSelected = filters.heightMin === lo && filters.heightMax === hi
+    const anyHeight = filters.heightMin !== null || filters.heightMax !== null
+    el.setAttribute('fill', isSelected ? '#c75b7a' : '#4a7c3f')
+    el.classList.toggle('chart-dim', anyHeight && !isSelected)
+  })
+}
+
+// ---- BOOTSTRAP ----
+;(async () => {
+  try {
+    allVarieties = await loadData()
+    document.getElementById('loading-state').style.display = 'none'
+    document.getElementById('filter-bar').style.display = ''
+    document.getElementById('results-summary').style.display = ''
+    renderDashboard()
+    initFilterUI()
+    render()
+  } catch (e) {
+    document.getElementById('loading-state').style.display = 'none'
+    const errEl = document.getElementById('error-state')
+    errEl.style.display = 'flex'
+    errEl.textContent = `Failed to load data: ${e.message}`
+  }
+})()
+</script>
+</body>
+</html>
