@@ -10,7 +10,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 /* min-width: 0 is critical — prevents ResponsiveContainer from overflowing grid cell */

@@ -48,6 +48,13 @@ const GREEN_BASE   = '#74b49b'
 const BLUE_ACTIVE  = '#2c6e8a'
 const BLUE_BASE    = '#7db0c8'
 
+const CHART_HEIGHT = 300
+
+function renderPieLabel({ name, percent }) {
+  if (percent < 0.05) return ''
+  return `${name} ${Math.round(percent * 100)}%`
+}
+
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const name = label ?? payload[0]?.payload?.name ?? payload[0]?.payload?.label
@@ -114,7 +121,6 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
     }
   }
 
-  const typeChartHeight = Math.max(140, typeData.length * 42 + 24)
   const heightFiltered = filters.heightMin !== null || filters.heightMax !== null
 
   return (
@@ -124,7 +130,7 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
         {/* Color — Pie chart */}
         <div className="dashboard__panel">
           <div className="dashboard__panel-title">By Color</div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
             <PieChart>
               <Pie
                 data={colorData}
@@ -132,7 +138,9 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={85}
+                outerRadius={90}
+                label={renderPieLabel}
+                labelLine={true}
                 onClick={(entry) => toggleColor(entry.name)}
                 cursor="pointer"
               >
@@ -158,7 +166,7 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
         {/* Type — horizontal bar chart */}
         <div className="dashboard__panel">
           <div className="dashboard__panel-title">By Type</div>
-          <ResponsiveContainer width="100%" height={typeChartHeight}>
+          <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
             <BarChart
               data={typeData}
               layout="vertical"
@@ -199,7 +207,7 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
         {/* Height — vertical bar chart */}
         <div className="dashboard__panel">
           <div className="dashboard__panel-title">By Height</div>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
             <BarChart
               data={heightData}
               margin={{ top: 4, right: 20, bottom: 4, left: 0 }}
