@@ -51,6 +51,7 @@ export default function DahliaTable({ varieties, sortKey, sortDir, onSort }) {
         <thead>
           <tr>
             <SortHeader col="name" label="Variety" />
+            <SortHeader col="dahliaNumber" label="Dahlia #" />
             <SortHeader col="colors" label="Colors" />
             <SortHeader col="type" label="Type" />
             <SortHeader col="height" label="Height (cm)" />
@@ -61,6 +62,7 @@ export default function DahliaTable({ varieties, sortKey, sortDir, onSort }) {
           {varieties.map(v => (
             <tr key={v.name}>
               <td className="td-name">{v.name}</td>
+              <td className="td-number">{v.dahliaNumber ?? '—'}</td>
               <td>
                 <div className="td-colors">
                   {v.colors.map(c => (

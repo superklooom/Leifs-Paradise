@@ -42,6 +42,13 @@
   color: #1a1a1a;
 }
 
+.dahlia-card__number {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: block;
+}
+
 .dahlia-card__count {
   font-size: 16px;
   font-weight: 700;

@@ -39,7 +39,7 @@ function colorStrip(colors) {
 }
 
 export default function DahliaCard({ variety }) {
-  const { name, height, colors, type, count } = variety
+  const { name, dahliaNumber, height, colors, type, count } = variety
   const bg = colorStrip(colors.length > 0 ? colors : ['#ccc'])
 
   return (
@@ -47,7 +47,12 @@ export default function DahliaCard({ variety }) {
       <div className="dahlia-card__swatch" style={{ background: bg }} />
       <div className="dahlia-card__body">
         <div className="dahlia-card__header">
-          <h3 className="dahlia-card__name">{name}</h3>
+          <div>
+            <h3 className="dahlia-card__name">{name}</h3>
+            {dahliaNumber && (
+              <span className="dahlia-card__number">#{dahliaNumber}</span>
+            )}
+          </div>
           <span className="dahlia-card__count" title="Number of tubers">
             ×{count}
           </span>

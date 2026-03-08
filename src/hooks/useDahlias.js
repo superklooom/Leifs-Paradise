@@ -36,6 +36,7 @@ function groupByVariety(rows) {
 
       groups[name] = {
         name,
+        dahliaNumber: row['Dahlia Number']?.toString().trim() || null,
         height: row['Height (cm)'] !== null ? Number(row['Height (cm)']) : null,
         colors,
         type: row['Type']?.trim() || null,

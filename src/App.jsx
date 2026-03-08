@@ -39,7 +39,9 @@ export default function App() {
     return varieties.filter(v => {
       if (filters.search) {
         const q = filters.search.toLowerCase()
-        if (!v.name.toLowerCase().includes(q)) return false
+        const matchesName = v.name.toLowerCase().includes(q)
+        const matchesNumber = v.dahliaNumber?.toLowerCase().includes(q)
+        if (!matchesName && !matchesNumber) return false
       }
       if (filters.colors.length > 0) {
         const hasColor = filters.colors.some(c => v.colors.includes(c))
