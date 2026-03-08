@@ -24,19 +24,19 @@
 }
 
 .app-header__icon {
-  font-size: 36px;
+  font-size: 40px;
   line-height: 1;
 }
 
 .app-header__title h1 {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: #fff;
   letter-spacing: -0.3px;
 }
 
 .app-header__title p {
-  font-size: 13px;
+  font-size: 17px;
   opacity: 0.7;
   margin-top: 2px;
 }
@@ -51,7 +51,7 @@
 }
 
 .grid-summary {
-  font-size: 13px;
+  font-size: 17px;
   color: var(--text-muted);
   margin-bottom: 16px;
 }
@@ -71,7 +71,7 @@
   gap: 12px;
   padding: 60px 24px;
   color: var(--text-muted);
-  font-size: 15px;
+  font-size: 19px;
 }
 
 .state-msg--error {

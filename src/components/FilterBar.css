@@ -26,7 +26,7 @@
 .filter-bar__search .search-icon {
   position: absolute;
   left: 10px;
-  font-size: 14px;
+  font-size: 18px;
   opacity: 0.5;
 }
 
@@ -35,7 +35,7 @@
   padding: 8px 32px 8px 32px;
   border: 1.5px solid var(--border);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 18px;
   font-family: inherit;
   background: #faf9f7;
   outline: none;
@@ -54,7 +54,7 @@
   border: none;
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 16px;
   padding: 2px 4px;
 }
 
@@ -71,7 +71,7 @@
   border-radius: 8px;
   background: #fff;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 17px;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s;
@@ -94,7 +94,7 @@
   border: none;
   background: #fff;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 20px;
   color: var(--text-muted);
   transition: all 0.15s;
 }
@@ -123,7 +123,7 @@
 }
 
 .filter-group label {
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -146,7 +146,7 @@
   border: 1.5px solid var(--border);
   border-radius: 20px;
   background: #fff;
-  font-size: 12px;
+  font-size: 16px;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.15s;
@@ -184,7 +184,7 @@
   margin-left: 8px;
   font-weight: 700;
   color: var(--green-dark);
-  font-size: 12px;
+  font-size: 16px;
   text-transform: none;
   letter-spacing: 0;
 }
@@ -203,7 +203,7 @@
 
 .filter-bar__results {
   margin-top: 10px;
-  font-size: 12px;
+  font-size: 16px;
   color: var(--text-muted);
 }
 
