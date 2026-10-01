@@ -14,7 +14,7 @@ test('unit price multiplies multipacks', () => {
 
 test('unit price per piece', () => {
   const q = { unit: { symbol: 'pcs', si: { symbol: 'pcs', factor: 1 } }, size: { from: 10 } };
-  assert.deepEqual(unitPrice(30, q), { value: 3, per: 'stk' });
+  assert.deepEqual(unitPrice(30, q), { value: 3, per: 'pc' });
 });
 
 test('missing quantity gives no unit price', () => {

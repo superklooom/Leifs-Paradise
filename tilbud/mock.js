@@ -102,7 +102,7 @@ export const mockApi = {
     ];
   },
   async reverse(q) {
-    return { label: `Demo-adresse (${Number(q.get('lat')).toFixed(4)}, ${Number(q.get('lng')).toFixed(4)})` };
+    return { label: `Demo address (${Number(q.get('lat')).toFixed(4)}, ${Number(q.get('lng')).toFixed(4)})` };
   },
   async search(q) {
     const words = (q.get('q') || '').toLowerCase().split(/\s+/).filter(Boolean);

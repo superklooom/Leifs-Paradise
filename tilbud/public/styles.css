@@ -200,3 +200,6 @@ tfoot td { font-weight: 700; }
   #quickChips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
   #quickChips .chip { flex: none; }
 }
+
+.footer { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 16px 32px; }
+.footer a { color: inherit; }

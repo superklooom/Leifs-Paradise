@@ -1,19 +1,29 @@
 // Tilbud Radar – frontend (vanilla JS, no build step).
+// Works as a static site (GitHub Pages) by calling the Tjek API directly from the browser,
+// or through server.js's /api proxy when that is available.
+import { createApi } from './core.js';
 
 const $ = (sel) => document.querySelector(sel);
 const LS_LOC = 'tilbud.location';
 const LS_LIST = 'tilbud.list';
 
-// Hebrew label -> Danish search term. Used for quick chips and to translate Hebrew searches.
+// English label -> Danish search term. Catalogs are in Danish, so English searches are translated.
 const PRODUCTS = [
-  ['☕ קפה', 'kaffe'], ['🥛 חלב', 'mælk'], ['🧈 חמאה', 'smør'], ['🥚 ביצים', 'æg'],
-  ['🍗 עוף', 'kylling'], ['🥩 בשר טחון', 'hakket oksekød'], ['🧀 גבינה', 'ost'], ['🍞 לחם', 'brød'],
-  ['🍌 בננות', 'bananer'], ['🍎 תפוחים', 'æbler'], ['🐟 סלמון', 'laks'], ['🍝 פסטה', 'pasta'],
-  ['🍺 בירה', 'øl'], ['🍷 יין', 'vin'], ['🥤 קולה', 'cola'], ['🧻 נייר טואלט', 'toiletpapir'],
-  ['🥣 יוגורט', 'yoghurt'], ['🍚 אורז', 'ris'], ['🥔 תפוחי אדמה', 'kartofler'], ['🍅 עגבניות', 'tomater'],
+  ['☕ Coffee', 'kaffe'], ['🥛 Milk', 'mælk'], ['🧈 Butter', 'smør'], ['🥚 Eggs', 'æg'],
+  ['🍗 Chicken', 'kylling'], ['🥩 Minced beef', 'hakket oksekød'], ['🧀 Cheese', 'ost'], ['🍞 Bread', 'brød'],
+  ['🍌 Bananas', 'bananer'], ['🍎 Apples', 'æbler'], ['🐟 Salmon', 'laks'], ['🍝 Pasta', 'pasta'],
+  ['🍺 Beer', 'øl'], ['🍷 Wine', 'vin'], ['🥤 Cola', 'cola'], ['🧻 Toilet paper', 'toiletpapir'],
+  ['🥣 Yoghurt', 'yoghurt'], ['🍚 Rice', 'ris'], ['🥔 Potatoes', 'kartofler'], ['🍅 Tomatoes', 'tomater'],
 ];
-const HE_TO_DA = Object.fromEntries(PRODUCTS.map(([he, da]) => [he.replace(/^\S+\s/, ''), da]));
-Object.assign(HE_TO_DA, { 'חזה עוף': 'kyllingebryst', 'בשר': 'oksekød', 'שמן': 'olie', 'סוכר': 'sukker', 'קמח': 'mel', 'מים': 'vand', 'חיתולים': 'bleer', 'שוקולד': 'chokolade' });
+const EN_TO_DA = Object.fromEntries(PRODUCTS.map(([en, da]) => [en.replace(/^\S+\s/, '').toLowerCase(), da]));
+Object.assign(EN_TO_DA, {
+  'chicken breast': 'kyllingebryst', beef: 'oksekød', pork: 'svinekød', oil: 'olie', 'olive oil': 'olivenolie',
+  sugar: 'sukker', flour: 'mel', water: 'vand', diapers: 'bleer', nappies: 'bleer', chocolate: 'chokolade',
+  egg: 'æg', apple: 'æbler', banana: 'bananer', potato: 'kartofler', tomato: 'tomater', ham: 'skinke',
+  sausages: 'pølser', fish: 'fisk', juice: 'juice', tea: 'te', cereal: 'morgenmad', oats: 'havregryn',
+  'washing powder': 'vaskemiddel', detergent: 'vaskemiddel', onions: 'løg', carrots: 'gulerødder',
+  cucumber: 'agurk', strawberries: 'jordbær', 'ice cream': 'is', soda: 'sodavand', crisps: 'chips',
+});
 
 const state = {
   loc: null, // { lat, lng, label, radius }
@@ -34,10 +44,10 @@ function saveJson(key, value) {
 }
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const kr = new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK' });
-const money = (v) => (v == null ? '' : `<bdi dir="ltr">${kr.format(v)}</bdi>`);
-const shortDate = (iso) => (iso ? new Date(iso).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' }) : '');
-const dateRange = (from, till) => `<bdi dir="ltr">${shortDate(from)}–${shortDate(till)}</bdi>`;
-const UNIT_HE = { kg: 'ק״ג', l: 'ליטר', stk: 'יח׳' };
+const money = (v) => (v == null ? '' : kr.format(v));
+const shortDate = (iso) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '');
+const dateRange = (from, till) => `${shortDate(from)} – ${shortDate(till)}`;
+const UNIT_LABEL = { kg: 'kg', l: 'L', pc: 'pc' };
 
 function toast(msg, ms = 3500) {
   const t = $('#toast');
@@ -47,9 +57,39 @@ function toast(msg, ms = 3500) {
   toast.timer = setTimeout(() => { t.hidden = true; }, ms);
 }
 
+// ---------- data source ----------
+// With server.js running we use its /api proxy (server-side cache, no CORS concerns).
+// On a static host (GitHub Pages) there is no /api, so the browser calls the public APIs directly.
+async function browserFetchJson(url, headers = {}) {
+  const res = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status} from ${new URL(url).host}`);
+  return res.json();
+}
+
+const backend = (async () => {
+  try {
+    const res = await fetch('api/health', { signal: AbortSignal.timeout(3000) });
+    if (res.ok && (await res.json()).ok) return null;
+  } catch { /* static hosting */ }
+  return createApi({ fetchJson: browserFetchJson });
+})();
+
+const DIRECT_ROUTES = {
+  '/api/geocode': 'geocode', '/api/reverse': 'reverse', '/api/search': 'search',
+  '/api/offers': 'offers', '/api/catalogs': 'catalogs', '/api/stores': 'stores',
+};
+
 async function api(path, params = {}) {
-  const url = new URL(path, location.origin);
-  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') url.searchParams.set(k, v);
+  const query = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') query.set(k, v);
+  const direct = await backend;
+  if (direct) {
+    const pages = path.match(/^\/api\/catalogs\/(.+)\/pages$/);
+    if (pages) return direct.pages(decodeURIComponent(pages[1]));
+    return direct[DIRECT_ROUTES[path]](query);
+  }
+  const url = new URL(path.slice(1), location.href);
+  url.search = query;
   const res = await fetch(url);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -68,7 +108,7 @@ function distanceKm(a, b) {
 
 // Accepts "55.67, 12.56", Google/Apple Maps links (…@55.67,12.56… / ?q=55.67,12.56 / ll=…), geo: URIs.
 function parseCoords(text) {
-  const m = String(text).match(/(-?\d{1,2}\.\d{3,})\s*(?:,|%2C|\s)\s*(-?\d{1,3}\.\d{3,})/i);
+  const m = String(text).match(/(-?\d{1,2}\.\d{2,})\s*(?:,|%2C|\s)\s*(-?\d{1,3}\.\d{2,})/i);
   if (!m) return null;
   const lat = Number(m[1]);
   const lng = Number(m[2]);
@@ -78,8 +118,8 @@ function parseCoords(text) {
 function placeholder(n = 8) {
   return Array.from({ length: n }, () => '<div class="skeleton"></div>').join('');
 }
-const needLocation = () => '<div class="empty">📍 הזינו כתובת או לחצו על "מיקום שלי" כדי להתחיל</div>';
-const errorBox = (e) => `<div class="empty error">שגיאה בטעינת הנתונים: ${esc(e.message)}</div>`;
+const needLocation = () => '<div class="empty">📍 Enter an address or tap "My location" to get started</div>';
+const errorBox = (e) => `<div class="empty error">Could not load data: ${esc(e.message)}</div>`;
 
 // ---------- sorting helpers ----------
 const unitVal = (o) => o.unitPrice?.value ?? Infinity;
@@ -93,11 +133,11 @@ const SORTERS = {
 
 // ---------- rendering: offers ----------
 function offerCard(o, { best = false } = {}) {
-  const unit = o.unitPrice ? `${money(o.unitPrice.value)} / ${UNIT_HE[o.unitPrice.per] || o.unitPrice.per}` : '';
+  const unit = o.unitPrice ? `${money(o.unitPrice.value)} / ${UNIT_LABEL[o.unitPrice.per] || o.unitPrice.per}` : '';
   const img = o.thumb || o.image;
   return `
   <article class="card${best ? ' is-best' : ''}">
-    ${best ? '<span class="card__badge">הכי משתלם</span>' : ''}
+    ${best ? '<span class="card__badge">Best value</span>' : ''}
     <div class="card__img">${img ? `<img loading="lazy" src="${esc(img)}" alt="">` : '🛒'}</div>
     <div class="card__body">
       <div class="card__dealer"><span class="chip__dot" style="background:${esc(o.dealer.color)}"></span>${esc(o.dealer.name)}</div>
@@ -109,8 +149,8 @@ function offerCard(o, { best = false } = {}) {
         ${o.prePrice ? `<span class="pre">${money(o.prePrice)}</span>` : ''}
       </div>
       ${unit ? `<div class="unit">${unit}</div>` : ''}
-      ${o.runTill ? `<div class="dates">בתוקף ${dateRange(o.runFrom, o.runTill)}</div>` : ''}
-      ${o.catalogId ? `<button class="card__link" data-catalog="${esc(o.catalogId)}" data-page="${o.catalogPage ?? 1}" data-title="${esc(o.dealer.name)}">📰 בעלון${o.catalogPage ? ` · עמ׳ ${o.catalogPage}` : ''}</button>` : ''}
+      ${o.runTill ? `<div class="dates">Valid ${dateRange(o.runFrom, o.runTill)}</div>` : ''}
+      ${o.catalogId ? `<button class="card__link" data-catalog="${esc(o.catalogId)}" data-page="${o.catalogPage ?? 1}" data-title="${esc(o.dealer.name)}">📰 In catalog${o.catalogPage ? ` · p. ${o.catalogPage}` : ''}</button>` : ''}
     </div>
   </article>`;
 }
@@ -125,7 +165,7 @@ function dealerChips(container, offers, selected, onChange) {
   }
   const names = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'da'));
   container.innerHTML = names.length > 1
-    ? `<button class="chip${selected.size ? '' : ' is-active'}" data-all="1">כל הרשתות</button>` +
+    ? `<button class="chip${selected.size ? '' : ' is-active'}" data-all="1">All chains</button>` +
       names.map((n) => `<button class="chip${selected.has(n) ? ' is-active' : ''}" data-dealer="${esc(n)}"><span class="chip__dot" style="background:${esc(counts.get(n).color)}"></span>${esc(n)} <small>${counts.get(n).n}</small></button>`).join('')
     : '';
   container.onclick = (e) => {
@@ -150,16 +190,16 @@ async function setLocation(loc, { silent = false } = {}) {
   await loadArea();
   if (state.activeTab === 'deals') loadDeals(true);
   if (state.compare.query) runSearch(state.compare.query);
-  if (!silent) toast('המיקום עודכן ✔');
+  if (!silent) toast('Location updated ✔');
 }
 
 function updateStatus(extra = '') {
   if (!state.loc) {
-    $('#locationStatus').textContent = 'לא נבחר מיקום עדיין';
+    $('#locationStatus').textContent = 'No location selected yet';
     return;
   }
   const km = state.loc.radius / 1000;
-  $('#locationStatus').textContent = `📍 ${state.loc.label || `${state.loc.lat.toFixed(4)}, ${state.loc.lng.toFixed(4)}`} · רדיוס ${km} ק״מ ${extra}`;
+  $('#locationStatus').textContent = `📍 ${state.loc.label || `${state.loc.lat.toFixed(4)}, ${state.loc.lng.toFixed(4)}`} · within ${km} km ${extra}`;
 }
 
 async function loadArea() {
@@ -168,7 +208,7 @@ async function loadArea() {
     const [catalogs, stores] = await Promise.all([api('/api/catalogs', geoParams()), api('/api/stores', geoParams()).catch(() => [])]);
     state.catalogs = catalogs;
     state.stores = stores;
-    updateStatus(`· ${catalogs.length} עלונים באזור`);
+    updateStatus(`· ${catalogs.length} catalog${catalogs.length === 1 ? "" : "s"} nearby`);
     renderCatalogs();
     renderDealsDealerChips();
   } catch (e) {
@@ -183,7 +223,7 @@ async function resolveAddress(text) {
     return setLocation({ ...coords, label: label || `${coords.lat}, ${coords.lng}` });
   }
   const rows = await api('/api/geocode', { q: text });
-  if (!rows.length) return toast('לא נמצאה כתובת כזו בדנמרק');
+  if (!rows.length) return toast('No matching address found in Denmark');
   return setLocation(rows[0]);
 }
 
@@ -193,7 +233,7 @@ function initLocation() {
   let timer;
   let rows = [];
 
-  const hide = () => { list.hidden = true; };
+  const hide = () => { clearTimeout(timer); list.hidden = true; };
   input.addEventListener('input', () => {
     clearTimeout(timer);
     const text = input.value.trim();
@@ -201,6 +241,7 @@ function initLocation() {
     timer = setTimeout(async () => {
       try {
         rows = await api('/api/geocode', { q: text });
+        if (input.value.trim() !== text || document.activeElement !== input) return;
         list.innerHTML = rows.map((r, i) => `<li data-i="${i}">${esc(r.label)}</li>`).join('');
         list.hidden = !rows.length;
       } catch { hide(); }
@@ -217,41 +258,37 @@ function initLocation() {
   $('#locationForm').addEventListener('submit', (e) => {
     e.preventDefault();
     hide();
+    input.blur();
     if (input.value.trim()) resolveAddress(input.value.trim()).catch((err) => toast(err.message));
   });
   $('#radiusSelect').addEventListener('change', () => {
     if (state.loc) setLocation({ radius: Number($('#radiusSelect').value) });
   });
   $('#gpsBtn').addEventListener('click', () => {
-    if (!navigator.geolocation) return toast('הדפדפן לא תומך באיתור מיקום');
-    toast('מאתר מיקום…');
+    if (!navigator.geolocation) return toast('Your browser does not support geolocation');
+    toast('Finding your location…');
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         const { label } = await api('/api/reverse', coords).catch(() => ({ label: '' }));
-        setLocation({ ...coords, label: label || 'המיקום שלי' });
+        setLocation({ ...coords, label: label || 'My location' });
       },
-      (err) => toast(`לא ניתן לאתר מיקום: ${err.message}`),
+      (err) => toast(`Could not get your location: ${err.message}`),
       { enableHighAccuracy: true, timeout: 15000 },
     );
   });
 }
 
 // ---------- compare ----------
-function translateQuery(q) {
-  if (!/[֐-׿]/.test(q)) return q;
-  const da = HE_TO_DA[q.trim()];
-  if (da) {
-    toast(`מחפש "${da}" (בדנית)`);
-    return da;
-  }
-  toast('המוצרים בעלונים בדנית – נסו לחפש בדנית (למשל kaffe)');
-  return null;
+function translateQuery(q, { notify = true } = {}) {
+  const da = EN_TO_DA[q.trim().toLowerCase()];
+  if (!da) return q;
+  if (notify) toast(`Searching for "${da}" (Danish for "${q.trim()}")`);
+  return da;
 }
 
 async function runSearch(raw) {
   const q = translateQuery(raw);
-  if (!q) return;
   state.compare.query = q;
   $('#searchInput').value = q;
   if (!state.loc) {
@@ -279,10 +316,10 @@ function renderCompare() {
     rows = [...best.values()].sort(SORTERS[sortKey]);
   }
   const bestId = [...rows].sort(SORTERS.unit)[0]?.id;
-  $('#compareCount').textContent = results.length ? `${rows.length} מבצעים` : '';
+  $('#compareCount').textContent = results.length ? `${rows.length} offers` : '';
   $('#compareResults').innerHTML = rows.length
     ? rows.map((o) => offerCard(o, { best: o.id === bestId && rows.length > 1 })).join('')
-    : `<div class="empty">לא נמצאו מבצעים עבור "${esc(state.compare.query)}" באזור. נסו מילה אחרת או רדיוס גדול יותר.</div>`;
+    : `<div class="empty">No offers for "${esc(state.compare.query)}" nearby. Try another word (Danish works best) or a bigger radius.</div>`;
 }
 
 function initCompare() {
@@ -298,7 +335,7 @@ function initCompare() {
   });
   $('#compareSort').addEventListener('change', renderCompare);
   $('#cheapestPerChain').addEventListener('change', renderCompare);
-  $('#compareResults').innerHTML = '<div class="empty">חפשו מוצר או בחרו אחד מהכפתורים למעלה כדי להשוות מחירים בין הרשתות</div>';
+  $('#compareResults').innerHTML = '<div class="empty">Search for a product or pick one above to compare prices across chains</div>';
 }
 
 // ---------- all deals ----------
@@ -357,8 +394,8 @@ function renderDeals() {
     .filter((o) => !d.dealers.size || d.dealers.has(o.dealer.name))
     .filter((o) => words.every((w) => `${o.heading} ${o.description} ${o.dealer.name}`.toLowerCase().includes(w)));
   const sorted = $('#dealsSort').value === 'popular' ? rows : [...rows].sort(SORTERS[$('#dealsSort').value]);
-  $('#dealsCount').textContent = `${sorted.length} מתוך ${d.items.length} מבצעים שנטענו`;
-  $('#dealsResults').innerHTML = sorted.length ? sorted.map((o) => offerCard(o)).join('') : '<div class="empty">אין מבצעים להצגה</div>';
+  $('#dealsCount').textContent = `${sorted.length} of ${d.items.length} loaded deals`;
+  $('#dealsResults').innerHTML = sorted.length ? sorted.map((o) => offerCard(o)).join('') : '<div class="empty">No deals to show</div>';
   $('#dealsMore').hidden = d.done;
 }
 
@@ -378,13 +415,13 @@ function nearestStore(dealerId) {
 
 function renderCatalogs() {
   if (!state.catalogs.length) {
-    $('#catalogResults').innerHTML = '<div class="empty">לא נמצאו עלונים באזור. נסו להגדיל את הרדיוס.</div>';
+    $('#catalogResults').innerHTML = '<div class="empty">No catalogs found nearby. Try a bigger radius.</div>';
     return;
   }
   $('#catalogResults').innerHTML = state.catalogs.map((c) => {
     const s = nearestStore(c.dealerId);
     const store = s
-      ? `<a class="catalog__store" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}" onclick="event.stopPropagation()">📍 ${esc(s.street)}, ${esc(s.city)} · ${s.km.toFixed(1)} ק״מ</a>`
+      ? `<a class="catalog__store" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}" onclick="event.stopPropagation()">📍 ${esc(s.street)}, ${esc(s.city)} · ${s.km.toFixed(1)} km</a>`
       : '';
     return `
     <div class="catalog" role="button" tabindex="0" data-catalog="${esc(c.id)}" data-page="1" data-title="${esc(c.label || c.dealer.name)}">
@@ -392,7 +429,7 @@ function renderCatalogs() {
       <div class="catalog__body">
         <div class="card__dealer"><span class="chip__dot" style="background:${esc(c.dealer.color)}"></span>${esc(c.dealer.name)}</div>
         <div class="card__desc">${esc(c.label)}</div>
-        <div class="dates">${dateRange(c.runFrom, c.runTill)} · ${c.pageCount} עמודים</div>
+        <div class="dates">${dateRange(c.runFrom, c.runTill)} · ${c.pageCount} pages</div>
         ${store}
       </div>
     </div>`;
@@ -406,14 +443,14 @@ async function openViewer(catalogId, page, title) {
   $('#viewerTitle').textContent = title || '';
   $('#viewerImg').removeAttribute('src');
   $('#viewerThumbs').innerHTML = '';
-  $('#viewerPage').textContent = 'טוען…';
+  $('#viewerPage').textContent = 'Loading…';
   dlg.showModal();
   try {
     viewer.pages = await api(`/api/catalogs/${encodeURIComponent(catalogId)}/pages`);
     $('#viewerThumbs').innerHTML = viewer.pages.map((p, i) => `<img loading="lazy" data-i="${i}" src="${esc(p.thumb || p.view)}" alt="${i + 1}">`).join('');
     showPage(Math.max(0, Math.min(Number(page) - 1 || 0, viewer.pages.length - 1)));
   } catch (e) {
-    $('#viewerPage').textContent = `שגיאה: ${e.message}`;
+    $('#viewerPage').textContent = `Error: ${e.message}`;
   }
 }
 
@@ -422,7 +459,7 @@ function showPage(i) {
   viewer.index = (i + viewer.pages.length) % viewer.pages.length;
   const p = viewer.pages[viewer.index];
   $('#viewerImg').src = p.zoom || p.view;
-  $('#viewerPage').textContent = `עמוד ${viewer.index + 1} מתוך ${viewer.pages.length}`;
+  $('#viewerPage').textContent = `Page ${viewer.index + 1} of ${viewer.pages.length}`;
   $('#viewerThumbs').querySelectorAll('img').forEach((img, n) => {
     img.classList.toggle('is-active', n === viewer.index);
     if (n === viewer.index) img.scrollIntoView({ block: 'nearest', inline: 'center' });
@@ -441,9 +478,8 @@ function initViewer() {
       openViewer(el.dataset.catalog, 1, el.dataset.title);
     }
     if (!$('#viewer').open) return;
-    // RTL: left arrow = next page
-    if (e.key === 'ArrowLeft') showPage(viewer.index + 1);
-    if (e.key === 'ArrowRight') showPage(viewer.index - 1);
+    if (e.key === 'ArrowRight') showPage(viewer.index + 1);
+    if (e.key === 'ArrowLeft') showPage(viewer.index - 1);
   });
   $('#viewerNext').addEventListener('click', () => showPage(viewer.index + 1));
   $('#viewerPrev').addEventListener('click', () => showPage(viewer.index - 1));
@@ -458,8 +494,8 @@ function initViewer() {
 // ---------- shopping list ----------
 function renderList() {
   $('#listItems').innerHTML = state.list.length
-    ? state.list.map((item, i) => `<li><span dir="auto">${esc(item)}</span><button data-i="${i}" aria-label="הסרה">✕</button></li>`).join('')
-    : '<li class="muted">הרשימה ריקה – הוסיפו מוצרים</li>';
+    ? state.list.map((item, i) => `<li><span dir="auto">${esc(item)}</span><button data-i="${i}" aria-label="Remove">✕</button></li>`).join('')
+    : '<li class="muted">Your list is empty – add some products</li>';
   $('#listCompare').disabled = !state.list.length;
 }
 
@@ -481,7 +517,7 @@ async function compareList() {
     return;
   }
   const items = state.list;
-  $('#listResults').innerHTML = '<div class="empty">משווה מחירים…</div>';
+  $('#listResults').innerHTML = '<div class="empty">Comparing prices…</div>';
   const results = await mapLimit(items, 4, (q) => api('/api/search', { q, ...geoParams() }));
 
   // cheapest[itemIndex][dealerName] = offer
@@ -497,7 +533,7 @@ async function compareList() {
   const dealers = new Map();
   for (const m of cheapest) for (const o of m.values()) dealers.set(o.dealer.name, o.dealer.color);
   if (!dealers.size) {
-    $('#listResults').innerHTML = '<div class="empty">לא נמצאו מבצעים לאף מוצר ברשימה</div>';
+    $('#listResults').innerHTML = '<div class="empty">No offers found for any product on your list</div>';
     return;
   }
 
@@ -523,15 +559,15 @@ async function compareList() {
     if (!o) return '<td class="muted">—</td>';
     return `<td class="${o.price === rowBest[i] ? 'best' : ''}">${money(o.price)}<span class="item-name">${esc(o.heading)}${o.quantity ? ` · ${esc(o.quantity)}` : ''}</span></td>`;
   }).join('')}</tr>`).join('');
-  const foot = `<tr><td>סה״כ (נמצאו)</td>${totals.map((t) => `<td>${money(t.sum)}<span class="item-name">${t.found}/${items.length} מוצרים</span></td>`).join('')}</tr>`;
+  const foot = `<tr><td>Total (found)</td>${totals.map((t) => `<td>${money(t.sum)}<span class="item-name">${t.found}/${items.length} items</span></td>`).join('')}</tr>`;
 
   $('#listResults').innerHTML = `
     <div class="summary">
-      <div>🏆 <strong>הרשת המשתלמת ביותר לסל:</strong> ${esc(top.name)} – ${top.found}/${items.length} מוצרים במבצע, סה״כ ${money(top.sum)}</div>
-      <div>🧺 <strong>אם קונים כל מוצר איפה שהכי זול:</strong> ${money(mixTotal)} (${mixFound}/${items.length} מוצרים)</div>
-      <div class="muted">ההשוואה לפי המחיר הזול ביותר שנמצא בכל רשת לכל מוצר. שימו לב לגדלי האריזות.</div>
+      <div>🏆 <strong>Best single chain for your basket:</strong> ${esc(top.name)} – ${top.found}/${items.length} items on offer, total ${money(top.sum)}</div>
+      <div>🧺 <strong>Buying each item where it is cheapest:</strong> ${money(mixTotal)} (${mixFound}/${items.length} items)</div>
+      <div class="muted">Uses the cheapest matching offer per chain for each item. Check pack sizes.</div>
     </div>
-    <div class="table-wrap"><table><thead><tr><th>מוצר</th>${head}</tr></thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>`;
+    <div class="table-wrap"><table><thead><tr><th>Item</th>${head}</tr></thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>`;
 }
 
 function initList() {
@@ -540,8 +576,7 @@ function initList() {
     e.preventDefault();
     const raw = $('#listInput').value.trim();
     if (!raw) return;
-    const q = /[֐-׿]/.test(raw) ? HE_TO_DA[raw] : raw;
-    if (!q) return toast('הוסיפו את שם המוצר בדנית (למשל kaffe)');
+    const q = translateQuery(raw, { notify: false });
     if (!state.list.includes(q)) state.list.push(q);
     saveJson(LS_LIST, state.list);
     $('#listInput').value = '';

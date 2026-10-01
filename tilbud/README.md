@@ -1,75 +1,81 @@
 # Tilbud Radar 🏷️
 
-אפליקציית ווב להשוואת מחירים ומבצעים של רשתות הסופרמרקטים בדנמרק, לפי מיקום.
-הנתונים מגיעים מ־**Tjek API** (`squid-api.tjek.com`), המערכת הציבורית שמאחורי [etilbudsavis.dk](https://etilbudsavis.dk/).
-זה אותו מידע שמופיע בעלונים השבועיים (Netto, føtex, Bilka, Lidl, REMA 1000, Coop 365, MENY, SuperBrugsen ועוד).
+A web app that compares this week's Danish supermarket offers near you.
+Data comes from the **Tjek API** (`squid-api.tjek.com`), the public backend behind [etilbudsavis.dk](https://etilbudsavis.dk/).
+It is the same data as the weekly catalogs from Netto, føtex, Bilka, Lidl, REMA 1000, Coop 365, MENY, SuperBrugsen and others.
 
-## מה יש באפליקציה
+**Web version:** https://superklooom.github.io/Leifs-Paradise/ (once GitHub Pages is enabled, see below)
 
-| לשונית | מה היא עושה |
+## Features
+
+| Tab | What it does |
 |---|---|
-| 🔍 **השוואת מחירים** | חיפוש מוצר (בדנית, או בכפתורים המהירים בעברית). מיון לפי מחיר לק״ג/ליטר, לפי מחיר או לפי הנחה, ואפשרות להציג רק "הזול ביותר בכל רשת". |
-| 🏷️ **כל המבצעים** | כל המבצעים מכל הרשתות באזור, עם סינון לפי רשת, חיפוש מהיר ומיון. |
-| 📰 **עלונים** | העלונים השבועיים באזור, עם צפייה בעמודים והסניף הקרוב ביותר (כולל קישור ל־Google Maps). |
-| 🛒 **רשימת קניות** | רשימה ששומרת את עצמה בדפדפן. לחיצה אחת משווה את כל הסל בכל הרשתות: איזו רשת הכי משתלמת לסל, וכמה יעלה לקנות כל מוצר איפה שהכי זול. |
+| 🔍 **Compare prices** | Search a product in English or Danish, or tap a quick button. Common English words such as "coffee" are translated to Danish automatically. Sort by price per kg/L, by price or by discount, or show only the cheapest offer per chain. |
+| 🏷️ **All deals** | Every offer from every chain nearby, with chain filters, quick text filter and sorting. |
+| 📰 **Catalogs** | This week's catalogs nearby, with a page viewer and the nearest store (distance and a Google Maps link). |
+| 🛒 **Shopping list** | Saved in your browser. One click compares the whole basket across chains: the best single chain, and the total if you buy each item where it is cheapest. |
 
-### איך מגדירים מיקום
-- מקלידים כתובת או מיקוד (השלמה אוטומטית דרך OpenStreetMap).
-- לוחצים על **📍 מיקום שלי** (GPS. עובד ב־HTTPS או ב־localhost).
-- מדביקים קואורדינטות (`55.6761, 12.5683`) או קישור של Google Maps / Apple Maps.
-- **שולחים מיקום כקישור**: `https://<השרת>/?lat=55.67&lng=12.56&r=5000` או `/?q=<כתובת או קישור מפות>`.
-- אחרי התקנה כ־PWA באנדרואיד ("הוסף למסך הבית"), אפשר **לשתף** מיקום מ־Google Maps ישירות לאפליקציה.
+### Setting your location
+- Type an address or postcode (autocomplete via OpenStreetMap).
+- Tap **📍 My location** (GPS, which needs HTTPS or localhost).
+- Paste coordinates (`55.6761, 12.5683`) or a Google Maps / Apple Maps link.
+- **Share a location as a link:** `…/?lat=55.67&lng=12.56&r=5000` or `…/?q=<address or maps link>`.
+- Installed as an app on Android ("Add to Home screen"), it appears in the share sheet, so you can share a place from Google Maps straight into it.
 
-## הרצה
+## Web version (GitHub Pages)
 
-צריך Node.js 18 ומעלה. אין תלויות להתקנה.
+The `public/` folder is a complete static site. In the browser it calls the Tjek API and OpenStreetMap directly, so no server is needed.
+The workflow `.github/workflows/tilbud-pages.yml` publishes it on every push to `main` that touches `tilbud/`.
+
+One-time setup:
+1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. Merge this work into `main`, or run the workflow manually from the **Actions** tab.
+3. Open https://superklooom.github.io/Leifs-Paradise/
+
+## Running locally (optional)
+
+Needs Node.js 18+. There are no dependencies to install.
 
 ```bash
 cd tilbud
-npm start            # נתונים אמיתיים, http://localhost:3000
-npm run dev          # נתוני דמו (בלי אינטרנט), לפיתוח
-npm test             # בדיקות יחידה
+npm start            # live data via a local proxy, http://localhost:3000
+npm run dev          # generated demo data (works offline)
+npm test             # unit tests
 ```
 
-משתני סביבה אופציונליים:
-- `PORT`: ברירת המחדל היא 3000
-- `TJEK_API_KEY`: אם Tjek ידרשו מפתח API, הוא יישלח בכותרת `X-Api-Key`
-- `TILBUD_MOCK=1`: נתוני דמו
+When the app is served by `server.js`, it uses the server's `/api` proxy, which caches responses for 10 minutes.
+On a static host it calls the APIs directly.
 
-## איסוף שבועי (היסטוריית מחירים)
+Optional environment variables: `PORT` (default 3000), `TJEK_API_KEY` (sent as `X-Api-Key` if Tjek ever requires one), `TILBUD_MOCK=1` (demo data).
+
+## Weekly snapshots (price history)
 
 ```bash
 npm run collect -- --address "Vesterbrogade 1, København" --radius 10000
-# או
 npm run collect -- --lat 55.6761 --lng 12.5683 --radius 10000
 ```
 
-הסקריפט שומר את כל המבצעים באזור לקובץ `data/offers-<שנה>-W<שבוע>.json`.
-אפשר להריץ אותו פעם בשבוע עם cron, למשל ביום רביעי בבוקר:
+This saves every offer nearby to `data/offers-<year>-W<week>.json`. Run it weekly from cron, e.g. on Wednesday mornings:
 
 ```
 0 7 * * 3  cd /path/to/tilbud && npm run collect -- --address "..." >> collect.log 2>&1
 ```
 
-## מבנה
+## Project layout
 
 ```
 tilbud/
-├── server.js           שרת HTTP: מגיש את האתר ואת ה־API (/api/*)
-├── lib.js              לקוח Tjek API, נרמול נתונים וחישוב מחיר ליחידה
-├── mock.js             נתוני דמו
-├── scripts/collect.js  איסוף שבועי
-├── public/             האפליקציה (HTML/CSS/JS, בלי שלב build)
-└── test/               בדיקות
+├── public/             the web app (static, no build step)
+│   ├── core.js         Tjek API client, normalisation, unit prices (shared with Node)
+│   └── app.js          UI
+├── server.js           optional local server: static files + /api proxy
+├── lib.js              Node wrapper around public/core.js
+├── mock.js             demo data
+├── scripts/collect.js  weekly snapshot
+└── test/               unit tests
 ```
 
-### נקודות קצה של השרת
-`/api/geocode?q=` · `/api/reverse?lat&lng` · `/api/search?q&lat&lng&radius` · `/api/offers?lat&lng&radius&dealer_ids&offset` ·
-`/api/catalogs?lat&lng&radius` · `/api/catalogs/:id/pages` · `/api/stores?lat&lng&radius`
-
-השרת שומר תשובות במטמון ל־10 דקות, כדי לא להעמיס על ה־API.
-
-## הערות
-- ה־API של Tjek אינו מתועד רשמית לשימוש ציבורי, ומבנה הנתונים עלול להשתנות. כל הנרמול מרוכז ב־`lib.js`.
-- המוצרים בעלונים כתובים בדנית, ולכן החיפוש עובד הכי טוב בדנית. לחלק מהמוצרים הנפוצים יש תרגום אוטומטי מעברית.
-- זה נועד לשימוש אישי. כדאי לכבד את תנאי השימוש של etilbudsavis/Tjek ושל OpenStreetMap Nominatim (לכל היותר בקשה אחת בשנייה).
+## Notes
+- The Tjek API is not officially documented for public use, and its format may change. All mapping lives in `public/core.js`.
+- Catalog products are in Danish. Danish search terms give the most results.
+- This is meant for personal use. Please respect the terms of etilbudsavis/Tjek and the OpenStreetMap Nominatim usage policy.
