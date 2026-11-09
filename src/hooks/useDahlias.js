@@ -89,9 +89,11 @@ export function useDahlias() {
   const [error, setError] = useState(null)
   // Status changes we just wrote: [{ name, to: 'Dead'|'Alive', target }]
   const [statusOps, setStatusOps] = useState([])
+  // Whole-variety edits we just wrote: [{ names, rows, done(parsedRows) }]
+  const [edits, setEdits] = useState([])
   // Set when a write was confirmed by the script but never showed up in the sheet we read.
   const [syncIssue, setSyncIssue] = useState(false)
-  const syncRef = useRef({ baseLen: 0, pendingLen: 0, tries: 0, ops: [] })
+  const syncRef = useRef({ baseLen: 0, pendingLen: 0, tries: 0, ops: [], edits: [] })
 
   const load = useCallback(() => {
     // Cache-buster so a reload after a write isn't served a stale copy.
@@ -110,7 +112,11 @@ export function useDahlias() {
           sync.ops = sync.ops.filter(op => countWithStatus(parsed, op.name, op.to === 'Dead') < op.target)
           setStatusOps(sync.ops)
         }
-        if (sync.pendingLen > 0 || sync.ops.length) {
+        if (sync.edits.length) {
+          sync.edits = sync.edits.filter(ed => !ed.done(parsed))
+          setEdits(sync.edits)
+        }
+        if (sync.pendingLen > 0 || sync.ops.length || sync.edits.length) {
           if (++sync.tries < 6) setTimeout(load, 5000)
           else setSyncIssue(true)
         } else {
@@ -159,7 +165,44 @@ export function useDahlias() {
     setTimeout(load, 3000)
   }, [rowsBeforeOps, load])
 
-  const rows = useMemo(() => applyStatusOps(rowsBeforeOps, statusOps), [rowsBeforeOps, statusOps])
+  // Replace a variety's rows locally after an edit (or remove them after a delete), then re-sync.
+  const editLocal = useCallback(({ variety, changes, alive, dead }) => {
+    const original = variety.name
+    const next = { ...variety, ...changes }
+    const newName = (next.name || original).trim()
+    const base = {
+      'Dahlia Number': next.dahliaNumber ?? next.number ?? null,
+      'Name': newName,
+      'Height (cm)': next.height === '' || next.height == null ? null : Number(next.height),
+      'Colors': (next.colors || []).join(', '),
+      'Type': next.type || null,
+    }
+    if ('number' in changes) base['Dahlia Number'] = changes.number || null
+    const rows = [
+      ...Array.from({ length: alive }, () => ({ ...base, [STATUS_COL]: 'Alive' })),
+      ...Array.from({ length: dead }, () => ({ ...base, [STATUS_COL]: 'Dead' })),
+    ]
+    const names = [original, newName]
+    const done = parsed =>
+      countWithStatus(parsed, newName, false) === alive &&
+      countWithStatus(parsed, newName, true) === dead &&
+      (newName === original || !parsed.some(r => r['Name']?.trim() === original))
+    const sync = syncRef.current
+    sync.ops = sync.ops.filter(op => !names.includes(op.name))
+    sync.edits = [...sync.edits.filter(ed => !ed.names.some(n => names.includes(n))), { names, rows, done }]
+    sync.tries = 0
+    setStatusOps(sync.ops)
+    setEdits(sync.edits)
+    setTimeout(load, 3000)
+  }, [load])
+
+  const rows = useMemo(() => {
+    let out = applyStatusOps(rowsBeforeOps, statusOps)
+    edits.forEach(ed => {
+      out = out.filter(r => !ed.names.includes(r['Name']?.trim())).concat(ed.rows)
+    })
+    return out
+  }, [rowsBeforeOps, statusOps, edits])
   const varieties = useMemo(() => groupByVariety(rows), [rows])
 
   const allColors = useMemo(() => {
@@ -180,5 +223,5 @@ export function useDahlias() {
     return { min: Math.min(...heights), max: Math.max(...heights) }
   }, [varieties])
 
-  return { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal, syncIssue, dismissSyncIssue: () => setSyncIssue(false), reload: load }
+  return { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal, editLocal, syncIssue, dismissSyncIssue: () => setSyncIssue(false), reload: load }
 }

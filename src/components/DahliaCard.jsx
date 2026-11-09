@@ -2,7 +2,7 @@ import Bloom from './Bloom'
 import { getColorHex } from '../utils/colors'
 import './DahliaCard.css'
 
-export default function DahliaCard({ variety, onSetStatus }) {
+export default function DahliaCard({ variety, onSetStatus, onEdit }) {
   const { name, dahliaNumber, height, colors, type, count, deadCount, isLost } = variety
   const tint = isLost ? '#9a948c' : getColorHex(colors[0])
 
@@ -29,12 +29,18 @@ export default function DahliaCard({ variety, onSetStatus }) {
           </span>
         )}
 
-        {onSetStatus && (
+        {(onSetStatus || onEdit) && (
           <div className="dahlia-card__actions">
-            {count > 0 && (
+            {onEdit && (
+              <button type="button" onClick={() => onEdit(variety)} aria-label={`Edit ${name}`}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                Edit
+              </button>
+            )}
+            {onSetStatus && count > 0 && (
               <button type="button" onClick={() => onSetStatus(variety, 'Dead')}>Mark lost</button>
             )}
-            {deadCount > 0 && (
+            {onSetStatus && deadCount > 0 && (
               <button type="button" onClick={() => onSetStatus(variety, 'Alive')}>Revive</button>
             )}
           </div>

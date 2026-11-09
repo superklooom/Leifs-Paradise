@@ -8,11 +8,12 @@ import Bloom from './components/Bloom'
 import ThemeToggle from './components/ThemeToggle'
 import AddDahliaDialog from './components/AddDahliaDialog'
 import StatusDialog from './components/StatusDialog'
+import EditDahliaDialog from './components/EditDahliaDialog'
 import { SHEET_WRITE_URL } from './config'
 import './App.css'
 
 export default function App() {
-  const { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal, syncIssue, dismissSyncIssue } = useDahlias()
+  const { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal, editLocal, syncIssue, dismissSyncIssue } = useDahlias()
   const [adding, setAdding] = useState(false)
 
   const [view, setView] = useState('grid')
@@ -25,6 +26,7 @@ export default function App() {
     status: 'all',
   })
   const [statusTarget, setStatusTarget] = useState(null) // { variety, mode }
+  const [editTarget, setEditTarget] = useState(null)     // variety
   const [sortKey, setSortKey] = useState('name')
   const [sortDir, setSortDir] = useState('asc')
 
@@ -193,6 +195,7 @@ export default function App() {
                       key={v.name}
                       variety={v}
                       onSetStatus={SHEET_WRITE_URL ? (variety, mode) => setStatusTarget({ variety, mode }) : null}
+                      onEdit={SHEET_WRITE_URL ? setEditTarget : null}
                     />
                   ))}
                 </div>
@@ -204,6 +207,7 @@ export default function App() {
                 sortDir={sortDir}
                 onSort={handleSort}
                 onSetStatus={SHEET_WRITE_URL ? (variety, mode) => setStatusTarget({ variety, mode }) : null}
+                onEdit={SHEET_WRITE_URL ? setEditTarget : null}
               />
             )}
           </main>
@@ -225,6 +229,17 @@ export default function App() {
               mode={statusTarget?.mode ?? 'Dead'}
               onClose={() => setStatusTarget(null)}
               onChanged={setStatusLocal}
+            />
+          )}
+
+          {SHEET_WRITE_URL && (
+            <EditDahliaDialog
+              variety={editTarget}
+              varieties={varieties}
+              allColors={allColors}
+              allTypes={allTypes}
+              onClose={() => setEditTarget(null)}
+              onSaved={editLocal}
             />
           )}
         </>

@@ -2,7 +2,7 @@ import Bloom from './Bloom'
 import { getColorHex } from '../utils/colors'
 import './DahliaTable.css'
 
-export default function DahliaTable({ varieties, sortKey, sortDir, onSort, onSetStatus }) {
+export default function DahliaTable({ varieties, sortKey, sortDir, onSort, onSetStatus, onEdit }) {
   function SortHeader({ col, label }) {
     const active = sortKey === col
     return (
@@ -72,6 +72,7 @@ export default function DahliaTable({ varieties, sortKey, sortDir, onSort, onSet
               </td>
               {onSetStatus && (
                 <td className="td-actions">
+                  {onEdit && <button type="button" onClick={() => onEdit(v)}>Edit</button>}
                   {v.count > 0 && <button type="button" onClick={() => onSetStatus(v, 'Dead')}>Mark lost</button>}
                   {v.deadCount > 0 && <button type="button" onClick={() => onSetStatus(v, 'Alive')}>Revive</button>}
                 </td>

@@ -12,10 +12,13 @@
  *       name, number, height, colors: [..], type, status, count } }
  *   { pin, action: "setStatus", name, to: "Dead"|"Alive", count }
  *                                                     → flips `count` tubers of that variety
+ *   { pin, action: "update", name, changes: { name, number, height, colors, type },
+ *     alive, dead }                                   → edits a variety and sets its tuber counts
+ *                                                       (rows are added/deleted to match; 0 + 0 deletes it)
  */
 
 const MAX_ROWS_PER_REQUEST = 50;
-const SCRIPT_VERSION = '3';
+const SCRIPT_VERSION = '4';
 
 // The spreadsheet the website reads from. Opening it by ID means the script writes to the
 // right file even if it was created from script.google.com instead of the sheet's menu.
@@ -72,6 +75,7 @@ function doPost(e) {
     }
     if (body.action === 'add') return json_(addEntry_(body.entry || {}));
     if (body.action === 'setStatus') return json_(setStatus_(body));
+    if (body.action === 'update') return json_(updateVariety_(body));
     return json_({ ok: false, error: 'Unknown action.' });
   } catch (err) {
     return json_({ ok: false, error: String(err && err.message || err) });
@@ -128,7 +132,7 @@ function addEntry_(entry) {
     .join(', ');
 
   const values = {
-    'Dahlia Number': String(entry.number || '').trim(),
+    'Dahlia Number': numberValue_(entry.number),
     'Name': name,
     'Dead or Alive': String(entry.status || 'Alive').trim(),
     'Height (cm)': height,
@@ -161,6 +165,145 @@ function addEntry_(entry) {
   result.ok = true;
   result.added = count;
   return result;
+}
+
+/** "110" → 110 so new numbers match the existing numeric cells; anything else stays text. */
+function numberValue_(v) {
+  const str = String(v == null ? '' : v).trim();
+  return /^\d+$/.test(str) ? Number(str) : str;
+}
+
+function colorsValue_(colors) {
+  return (Array.isArray(colors) ? colors : String(colors || '').split(','))
+    .map(function (c) { return String(c).trim(); })
+    .filter(Boolean)
+    .join(', ');
+}
+
+/**
+ * Edit one variety. `changes` may hold name, number, height, colors, type (only keys present
+ * are changed, on every row of the variety). `alive` / `dead` are the wanted tuber counts:
+ * extra rows are deleted (newest first), missing rows are inserted right after the variety.
+ */
+function updateVariety_(body) {
+  const original = String(body.name || '').trim();
+  if (!original) return { ok: false, error: 'Name is required.' };
+  const changes = body.changes || {};
+  const wantAlive = Math.floor(Number(body.alive));
+  const wantDead = Math.floor(Number(body.dead));
+  if (!(wantAlive >= 0 && wantDead >= 0 && wantAlive + wantDead <= 500)) {
+    return { ok: false, error: 'Tuber counts are out of range.' };
+  }
+
+  const fieldValues = {};
+  if ('name' in changes) {
+    const n = String(changes.name || '').trim();
+    if (!n) return { ok: false, error: 'Name cannot be empty.' };
+    fieldValues['Name'] = n;
+  }
+  if ('number' in changes) fieldValues['Dahlia Number'] = numberValue_(changes.number);
+  if ('height' in changes) {
+    const h = changes.height === '' || changes.height == null ? '' : Number(changes.height);
+    if (h !== '' && !(h > 0 && h < 1000)) return { ok: false, error: 'Height looks wrong.' };
+    fieldValues['Height (cm)'] = h;
+  }
+  if ('colors' in changes) fieldValues['Colors'] = colorsValue_(changes.colors);
+  if ('type' in changes) fieldValues['Type'] = String(changes.type || '').trim();
+  const newName = fieldValues['Name'] || original;
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const t = getTable_();
+    const sheet = t.sheet;
+    const first = t.headerRow + 1;
+    const last = lastNamedRow_(t);
+    if (last < first) return { ok: false, error: 'The sheet is empty.' };
+    const nCols = t.headers.length;
+    const col = function (h) { return t.headers.indexOf(h); };
+    const nameCol = col('Name');
+    const statusCol = col('Dead or Alive');
+    if (statusCol < 0) return { ok: false, error: 'Column "Dead or Alive" not found.' };
+
+    const block = sheet.getRange(first, 1, last - first + 1, nCols).getValues();
+    const mine = [];
+    for (let i = 0; i < block.length; i++) {
+      const n = String(block[i][nameCol]).trim();
+      if (n === original) mine.push(i);
+      else if (newName !== original && n.toLowerCase() === newName.toLowerCase()) {
+        return { ok: false, error: 'A variety called "' + newName + '" already exists.' };
+      }
+    }
+    if (!mine.length) return { ok: false, error: 'Variety "' + original + '" was not found in the sheet.' };
+
+    const statusOf = function (i) { return isDead_(block[i][statusCol]); };
+    const aliveNow = mine.filter(function (i) { return !statusOf(i); }).length;
+    const deadNow = mine.length - aliveNow;
+    if (Math.max(0, wantAlive - aliveNow) + Math.max(0, wantDead - deadNow) > MAX_ROWS_PER_REQUEST) {
+      return { ok: false, error: 'You can add at most ' + MAX_ROWS_PER_REQUEST + ' tubers at a time.' };
+    }
+
+    // 1) Field changes on every row of the variety (column by column, known columns only).
+    Object.keys(fieldValues).forEach(function (h) {
+      const c = col(h);
+      if (c < 0) return;
+      mine.forEach(function (i) { block[i][c] = fieldValues[h]; });
+      const top = mine[0], bottom = mine[mine.length - 1];
+      const colValues = [];
+      for (let i = top; i <= bottom; i++) colValues.push([block[i][c]]);
+      sheet.getRange(first + top, c + 1, bottom - top + 1, 1).setValues(colValues);
+    });
+
+    // 2) Tuber counts.
+    const aliveRows = mine.filter(function (i) { return !isDead_(block[i][statusCol]); });
+    const deadRows = mine.filter(function (i) { return isDead_(block[i][statusCol]); });
+    const toDelete = aliveRows.slice(wantAlive).concat(deadRows.slice(wantDead))
+      .map(function (i) { return first + i; })
+      .sort(function (a, b) { return b - a; });
+    const addAlive = Math.max(0, wantAlive - aliveRows.length);
+    const addDead = Math.max(0, wantDead - deadRows.length);
+
+    // Template for new rows: the variety's first row, after the field changes.
+    const template = block[mine[0]].slice();
+    toDelete.forEach(function (r) { sheet.deleteRow(r); });
+
+    const toAdd = addAlive + addDead;
+    if (toAdd > 0) {
+      // Insert right after the variety's last remaining row (or after the table if none remain).
+      const kept = mine.filter(function (i) { return toDelete.indexOf(first + i) < 0; });
+      let after;
+      if (kept.length) {
+        const lastKept = kept[kept.length - 1];
+        const removedAbove = toDelete.filter(function (r) { return r < first + lastKept; }).length;
+        after = first + lastKept - removedAbove;
+      } else {
+        after = lastNamedRow_(t);
+      }
+      sheet.insertRowsAfter(after, toAdd);
+      const known = ['Dahlia Number', 'Name', 'Dead or Alive', 'Height (cm)', 'Colors', 'Type'];
+      known.forEach(function (h) {
+        const c = col(h);
+        if (c < 0) return;
+        const vals = [];
+        for (let k = 0; k < toAdd; k++) {
+          vals.push([h === 'Dead or Alive' ? (k < addAlive ? 'Alive' : 'Dead') : template[c]]);
+        }
+        sheet.getRange(after + 1, c + 1, toAdd, 1).setValues(vals);
+      });
+    }
+    SpreadsheetApp.flush();
+    return {
+      ok: true,
+      name: newName,
+      alive: wantAlive,
+      dead: wantDead,
+      deleted: toDelete.length,
+      added: toAdd,
+      sheet: sheet.getName(),
+    };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function isDead_(value) {

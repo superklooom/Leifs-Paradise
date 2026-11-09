@@ -180,3 +180,36 @@
 }
 .btn.btn--danger:hover { background: #5e463f; border-color: #5e463f; color: #fff; }
 .btn.btn--danger:disabled { opacity: .6; cursor: progress; }
+
+/* ---------- Edit dialog ---------- */
+.field > label .delta {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.delta.up { background: var(--accent-soft); color: var(--accent-ink); }
+.delta.down { background: var(--rose-soft); color: var(--rose-ink); }
+.edit-note {
+  font-size: 13px;
+  color: var(--rose-ink);
+  background: var(--rose-soft);
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+.add-dialog__foot { align-items: center; flex-wrap: wrap; }
+.add-dialog__spacer { flex: 1; }
+.delete-link { color: var(--text-muted); font-weight: 500; }
+.delete-link:hover { color: var(--rose-ink); }
+.delete-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--rose-ink);
+}
+.delete-confirm .btn { padding: 6px 12px; font-size: 13px; }
+@media (max-width: 560px) {
+  .add-dialog__foot .add-dialog__spacer { flex-basis: 100%; height: 0; }
+}
