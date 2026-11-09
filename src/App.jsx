@@ -57,7 +57,7 @@ export default function App() {
 
     return varieties.filter(v => {
       if (filters.status === 'alive' && v.count === 0) return false
-      if (filters.status === 'dead' && v.deadCount === 0) return false
+      if (filters.status === 'dead' && !v.isLost) return false
       if (filters.search) {
         const q = filters.search.toLowerCase()
         const matchesName = v.name.toLowerCase().includes(q)
@@ -90,7 +90,7 @@ export default function App() {
   const statusCounts = useMemo(() => ({
     all: varieties.length,
     alive: varieties.filter(v => v.count > 0).length,
-    dead: varieties.filter(v => v.deadCount > 0).length,
+    dead: varieties.filter(v => v.isLost).length,
   }), [varieties])
 
   const filteredTubers = useMemo(() =>
