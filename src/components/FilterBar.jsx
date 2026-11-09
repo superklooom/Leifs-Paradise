@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getColorHex } from '../utils/colors'
+import { SORT_OPTIONS } from '../utils/sorting'
 import './FilterBar.css'
 
 const EMPTY = { search: '', colors: [], types: [], heightMin: null, heightMax: null, status: 'all' }
@@ -9,6 +10,7 @@ export default function FilterBar({
   allColors, allTypes, heightRange,
   totalCount, filteredCount, filteredTubers,
   view, onViewChange, onAdd, statusCounts,
+  sortKey, sortDir, onSortChange,
 }) {
   const [open, setOpen] = useState(() =>
     typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 720px)').matches)
@@ -53,7 +55,7 @@ export default function FilterBar({
             aria-expanded={open}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-            Filters
+            <span className="filters-btn__label">Filters</span>
             {activeCount > 0 && <span className="filters-btn__badge">{activeCount}</span>}
           </button>
 
@@ -62,6 +64,24 @@ export default function FilterBar({
           </div>
 
           <div className="toolbar__actions">
+            <div className="sort-control">
+              <label htmlFor="sort-by">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>
+                <span>Sort</span>
+              </label>
+              <select id="sort-by" aria-label="Sort by" value={sortKey} onChange={e => onSortChange(e.target.value)}>
+                {SORT_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+              </select>
+              <button
+                type="button"
+                className="sort-control__dir"
+                onClick={() => onSortChange(sortKey, sortDir === 'asc' ? 'desc' : 'asc')}
+                aria-label={sortDir === 'asc' ? 'Ascending — switch to descending' : 'Descending — switch to ascending'}
+                title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
+              >
+                {sortDir === 'asc' ? '↑' : '↓'}
+              </button>
+            </div>
             {hasActiveFilters && (
               <button className="link-btn" onClick={() => onFilterChange(EMPTY)}>Clear all</button>
             )}

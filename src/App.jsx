@@ -10,6 +10,7 @@ import AddDahliaDialog from './components/AddDahliaDialog'
 import StatusDialog from './components/StatusDialog'
 import EditDahliaDialog from './components/EditDahliaDialog'
 import { SHEET_WRITE_URL } from './config'
+import { SORT_OPTIONS, defaultDir, sortVarieties } from './utils/sorting'
 import './App.css'
 
 export default function App() {
@@ -27,20 +28,27 @@ export default function App() {
   })
   const [statusTarget, setStatusTarget] = useState(null) // { variety, mode }
   const [editTarget, setEditTarget] = useState(null)     // variety
-  const [sortKey, setSortKey] = useState('name')
-  const [sortDir, setSortDir] = useState('asc')
+  const [{ sortKey, sortDir }, setSort] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('lp-sort') || 'null')
+      if (saved && SORT_OPTIONS.some(o => o.key === saved.sortKey)) return saved
+    } catch { /* ignore */ }
+    return { sortKey: 'dahliaNumber', sortDir: 'asc' }
+  })
+
+  function changeSort(key, dir) {
+    const next = { sortKey: key, sortDir: dir ?? defaultDir(key) }
+    setSort(next)
+    try { localStorage.setItem('lp-sort', JSON.stringify(next)) } catch { /* ignore */ }
+  }
 
   function handleFilterChange(patch) {
     setFilters(prev => ({ ...prev, ...patch }))
   }
 
+  // Table header click: same column flips direction, a new column starts in its natural direction.
   function handleSort(col) {
-    if (sortKey === col) {
-      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortKey(col)
-      setSortDir('asc')
-    }
+    changeSort(col, sortKey === col ? (sortDir === 'asc' ? 'desc' : 'asc') : defaultDir(col))
   }
 
   const filtered = useMemo(() => {
@@ -70,24 +78,7 @@ export default function App() {
     })
   }, [varieties, filters, heightRange])
 
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      let aVal = a[sortKey]
-      let bVal = b[sortKey]
-      if (sortKey === 'colors') {
-        aVal = a.colors.join(', ')
-        bVal = b.colors.join(', ')
-      }
-      if (aVal === null || aVal === undefined) return 1
-      if (bVal === null || bVal === undefined) return -1
-      const cmp = typeof aVal === 'number'
-        ? aVal - bVal
-        : sortKey === 'dahliaNumber'
-          ? Number(aVal) - Number(bVal)
-          : String(aVal).localeCompare(String(bVal))
-      return sortDir === 'asc' ? cmp : -cmp
-    })
-  }, [filtered, sortKey, sortDir])
+  const sorted = useMemo(() => sortVarieties(filtered, sortKey, sortDir), [filtered, sortKey, sortDir])
 
   // Summary stats
   const totalTubers = useMemo(() =>
@@ -164,6 +155,9 @@ export default function App() {
             onViewChange={setView}
             onAdd={SHEET_WRITE_URL ? () => setAdding(true) : null}
             statusCounts={statusCounts}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSortChange={changeSort}
           />
 
           {syncIssue && (
