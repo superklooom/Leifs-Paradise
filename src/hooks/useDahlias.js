@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 
 const SHEET_ID = '1wfbgTeYJrD1O9oOOVBTNxEjAyMZidPbWDRB4PTGHpiw'
 
@@ -37,7 +37,7 @@ function groupByVariety(rows) {
       groups[name] = {
         name,
         dahliaNumber: row['Dahlia Number']?.toString().trim() || null,
-        height: row['Height (cm)'] !== null ? Number(row['Height (cm)']) : null,
+        height: row['Height (cm)'] !== null && row['Height (cm)'] !== '' ? Number(row['Height (cm)']) : null,
         colors,
         type: row['Type']?.trim() || null,
         count: 0,
@@ -49,15 +49,31 @@ function groupByVariety(rows) {
 }
 
 export function useDahlias() {
-  const [rows, setRows] = useState([])
+  const [sheetRows, setSheetRows] = useState([])
+  // Rows we just wrote but the (slightly cached) read feed may not show yet.
+  const [pending, setPending] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const syncRef = useRef({ baseLen: 0, pendingLen: 0, tries: 0 })
 
-  useEffect(() => {
-    fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`)
+  const load = useCallback(() => {
+    // Cache-buster so a reload after a write isn't served a stale copy.
+    return fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&_=${Date.now()}`)
       .then(r => r.text())
       .then(text => {
-        setRows(parseGViz(text))
+        const parsed = parseGViz(text)
+        const sync = syncRef.current
+        setSheetRows(parsed)
+        if (sync.pendingLen > 0) {
+          if (parsed.length >= sync.baseLen + sync.pendingLen) {
+            // The sheet has caught up: drop the local copies.
+            setPending([])
+            sync.pendingLen = 0
+          } else if (++sync.tries < 6) {
+            setTimeout(load, 5000)
+          }
+        }
+        setError(null)
         setLoading(false)
       })
       .catch(e => {
@@ -66,6 +82,28 @@ export function useDahlias() {
       })
   }, [])
 
+  useEffect(() => { load() }, [load])
+
+  // Show freshly written rows immediately, then re-sync with the sheet.
+  const addLocal = useCallback(entry => {
+    const row = {
+      'Dahlia Number': entry.number || null,
+      'Name': entry.name,
+      'Dead or Alive': entry.status || 'Alive',
+      'Height (cm)': entry.height === '' || entry.height == null ? null : Number(entry.height),
+      'Colors': entry.colors.join(', '),
+      'Type': entry.type || null,
+    }
+    const added = Array.from({ length: entry.count }, () => ({ ...row }))
+    const sync = syncRef.current
+    if (sync.pendingLen === 0) sync.baseLen = sheetRows.length
+    sync.pendingLen += added.length
+    sync.tries = 0
+    setPending(prev => [...prev, ...added])
+    setTimeout(load, 3000)
+  }, [load, sheetRows.length])
+
+  const rows = useMemo(() => [...sheetRows, ...pending], [sheetRows, pending])
   const varieties = useMemo(() => groupByVariety(rows), [rows])
 
   const allColors = useMemo(() => {
@@ -86,5 +124,5 @@ export function useDahlias() {
     return { min: Math.min(...heights), max: Math.max(...heights) }
   }, [varieties])
 
-  return { varieties, loading, error, allColors, allTypes, heightRange }
+  return { varieties, loading, error, allColors, allTypes, heightRange, addLocal, reload: load }
 }

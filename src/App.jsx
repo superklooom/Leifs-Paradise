@@ -6,10 +6,13 @@ import DahliaCard from './components/DahliaCard'
 import DahliaTable from './components/DahliaTable'
 import Bloom from './components/Bloom'
 import ThemeToggle from './components/ThemeToggle'
+import AddDahliaDialog from './components/AddDahliaDialog'
+import { SHEET_WRITE_URL } from './config'
 import './App.css'
 
 export default function App() {
-  const { varieties, loading, error, allColors, allTypes, heightRange } = useDahlias()
+  const { varieties, loading, error, allColors, allTypes, heightRange, addLocal } = useDahlias()
+  const [adding, setAdding] = useState(false)
 
   const [view, setView] = useState('grid')
   const [filters, setFilters] = useState({
@@ -138,6 +141,7 @@ export default function App() {
             filteredTubers={filteredTubers}
             view={view}
             onViewChange={setView}
+            onAdd={SHEET_WRITE_URL ? () => setAdding(true) : null}
           />
 
           <Dashboard
@@ -170,6 +174,17 @@ export default function App() {
               />
             )}
           </main>
+
+          {SHEET_WRITE_URL && (
+            <AddDahliaDialog
+              open={adding}
+              onClose={() => setAdding(false)}
+              varieties={varieties}
+              allColors={allColors}
+              allTypes={allTypes}
+              onAdded={addLocal}
+            />
+          )}
         </>
       )}
     </div>

@@ -8,7 +8,7 @@ export default function FilterBar({
   filters, onFilterChange,
   allColors, allTypes, heightRange,
   totalCount, filteredCount, filteredTubers,
-  view, onViewChange,
+  view, onViewChange, onAdd,
 }) {
   const [open, setOpen] = useState(() =>
     typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 720px)').matches)
@@ -63,6 +63,12 @@ export default function FilterBar({
           <div className="toolbar__actions">
             {hasActiveFilters && (
               <button className="link-btn" onClick={() => onFilterChange(EMPTY)}>Clear all</button>
+            )}
+            {onAdd && (
+              <button className="add-btn" onClick={onAdd}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                <span>Add dahlia</span>
+              </button>
             )}
             <div className="segmented" role="group" aria-label="View">
               <button className={view === 'grid' ? 'active' : ''} onClick={() => onViewChange('grid')} aria-pressed={view === 'grid'} title="Card view">

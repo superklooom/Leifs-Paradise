@@ -17,6 +17,8 @@ export const COLOR_HEX = {
   Magenta: '#c2185b',
   'Dark Red': '#8b0000',
   'Dark Pink': '#d94c7e',
+  Blue: '#5b84d6',
+  Green: '#6aa84f',
   Bi: '#999999',
 }
 

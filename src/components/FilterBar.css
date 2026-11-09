@@ -135,6 +135,24 @@
   box-shadow: var(--shadow-sm);
 }
 
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--forest-2);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  transition: background .2s, transform .2s;
+}
+.add-btn:hover { background: var(--forest); transform: translateY(-1px); }
+
 /* ---------- Filters panel ---------- */
 .filters {
   border-bottom: 1px solid var(--border);
@@ -257,4 +275,6 @@
   .toolbar__actions { order: 3; }
   .toolbar__results { order: 4; flex-basis: 100%; font-size: 13px; }
   .segmented button span { display: none; }
+  .add-btn span { display: none; }
+  .add-btn { padding: 8px 10px; }
 }
