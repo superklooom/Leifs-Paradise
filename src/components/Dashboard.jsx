@@ -80,6 +80,7 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
     }))
     return Object.entries(map)
       .map(([name, value]) => ({ name, value }))
+      .filter(d => d.value > 0)
       .sort((a, b) => b.value - a.value)
   }, [varieties])
 
@@ -90,6 +91,7 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
     })
     return Object.entries(map)
       .map(([name, value]) => ({ name, value }))
+      .filter(d => d.value > 0)
       .sort((a, b) => b.value - a.value)
   }, [varieties])
 

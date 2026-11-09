@@ -1,17 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Bloom from './Bloom'
 import { getColorHex } from '../utils/colors'
-import { SHEET_WRITE_URL } from '../config'
+import { readPin, callSheet } from '../utils/sheetApi'
 import './AddDahliaDialog.css'
-
-const PIN_KEY = 'lp-pin'
-
-function readPin() {
-  try { return localStorage.getItem(PIN_KEY) || '' } catch { return '' }
-}
-function savePin(pin) {
-  try { localStorage.setItem(PIN_KEY, pin) } catch { /* ignore */ }
-}
 
 function nextNumber(varieties) {
   const nums = varieties.map(v => Number(v.dahliaNumber)).filter(n => Number.isFinite(n))
@@ -82,15 +73,7 @@ export default function AddDahliaDialog({ open, onClose, varieties, allColors, a
     const entry = { ...form, name: form.name.trim(), count: Number(form.count) || 1 }
     setState({ busy: true, error: '', done: '' })
     try {
-      const res = await fetch(SHEET_WRITE_URL, {
-        method: 'POST',
-        // text/plain keeps this a "simple" request, which Apps Script accepts cross-origin.
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ pin: pin.trim(), action: 'add', entry }),
-      })
-      const data = await res.json()
-      if (!data.ok) throw new Error(data.error || 'The sheet rejected the request.')
-      savePin(pin.trim())
+      await callSheet({ pin: pin.trim(), action: 'add', entry })
       onAdded(entry)
       setState({
         busy: false,

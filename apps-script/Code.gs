@@ -10,6 +10,8 @@
  *   { pin, action: "verify" }                         → checks the PIN only
  *   { pin, action: "add", entry: {                    → appends `count` rows
  *       name, number, height, colors: [..], type, status, count } }
+ *   { pin, action: "setStatus", name, to: "Dead"|"Alive", count }
+ *                                                     → flips `count` tubers of that variety
  */
 
 const MAX_ROWS_PER_REQUEST = 50;
@@ -23,6 +25,7 @@ function doPost(e) {
 
     if (body.action === 'verify') return json_({ ok: true });
     if (body.action === 'add') return json_(addEntry_(body.entry || {}));
+    if (body.action === 'setStatus') return json_(setStatus_(body));
     return json_({ ok: false, error: 'Unknown action.' });
   } catch (err) {
     return json_({ ok: false, error: String(err && err.message || err) });
@@ -75,6 +78,50 @@ function addEntry_(entry) {
     lock.releaseLock();
   }
   return { ok: true, added: count };
+}
+
+function isDead_(value) {
+  return /dead|מת/i.test(String(value == null ? '' : value));
+}
+
+function setStatus_(body) {
+  const name = String(body.name || '').trim();
+  const to = body.to === 'Dead' ? 'Dead' : body.to === 'Alive' ? 'Alive' : '';
+  const count = Math.floor(Number(body.count || 1));
+  if (!name) return { ok: false, error: 'Name is required.' };
+  if (!to) return { ok: false, error: 'Status must be Dead or Alive.' };
+  if (!(count >= 1 && count <= MAX_ROWS_PER_REQUEST)) return { ok: false, error: 'Count is out of range.' };
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { ok: false, error: 'The sheet is empty.' };
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+      .map(function (h) { return String(h).trim(); });
+    const nameCol = headers.indexOf('Name');
+    const statusCol = headers.indexOf('Dead or Alive');
+    if (nameCol < 0 || statusCol < 0) return { ok: false, error: 'Columns "Name" / "Dead or Alive" not found.' };
+
+    const names = sheet.getRange(2, nameCol + 1, lastRow - 1, 1).getValues();
+    const statusRange = sheet.getRange(2, statusCol + 1, lastRow - 1, 1);
+    const statuses = statusRange.getValues();
+    const wantDead = to === 'Dead';
+
+    let changed = 0;
+    for (let i = 0; i < names.length && changed < count; i++) {
+      if (String(names[i][0]).trim() === name && isDead_(statuses[i][0]) !== wantDead) {
+        statuses[i][0] = to;
+        changed++;
+      }
+    }
+    if (changed === 0) return { ok: false, error: 'No ' + (wantDead ? 'living' : 'lost') + ' tubers of "' + name + '" found.' };
+    statusRange.setValues(statuses);
+    return { ok: true, changed: changed };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function json_(obj) {

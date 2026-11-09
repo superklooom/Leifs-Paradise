@@ -166,7 +166,7 @@
   margin: 0 auto;
   padding: 16px var(--gutter) 20px;
   display: grid;
-  grid-template-columns: 2fr 1.2fr minmax(220px, 1fr);
+  grid-template-columns: auto 2fr 1.2fr minmax(200px, 1fr);
   gap: 28px;
 }
 
@@ -264,6 +264,17 @@
   margin-top: 2px;
 }
 
+.segmented--status { display: inline-flex; }
+.segmented--status button { padding: 6px 12px; font-size: 13.5px; }
+.segmented--status em { font-style: normal; font-weight: 500; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-dot--alive { background: var(--accent); }
+.status-dot--dead { background: transparent; border: 1.5px dashed var(--lost-ink); }
+
+@media (max-width: 1100px) {
+  .filters__inner { grid-template-columns: 1fr 1fr; }
+}
+
 @media (max-width: 960px) {
   .filters__inner { grid-template-columns: 1fr; gap: 18px; }
 }
@@ -274,7 +285,7 @@
   .filters-btn { order: 2; }
   .toolbar__actions { order: 3; }
   .toolbar__results { order: 4; flex-basis: 100%; font-size: 13px; }
-  .segmented button span { display: none; }
+  .segmented:not(.segmented--status) button span { display: none; }
   .add-btn span { display: none; }
   .add-btn { padding: 8px 10px; }
 }

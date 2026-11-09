@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { getColorHex } from '../utils/colors'
 import './FilterBar.css'
 
-const EMPTY = { search: '', colors: [], types: [], heightMin: null, heightMax: null }
+const EMPTY = { search: '', colors: [], types: [], heightMin: null, heightMax: null, status: 'all' }
 
 export default function FilterBar({
   filters, onFilterChange,
   allColors, allTypes, heightRange,
   totalCount, filteredCount, filteredTubers,
-  view, onViewChange, onAdd,
+  view, onViewChange, onAdd, statusCounts,
 }) {
   const [open, setOpen] = useState(() =>
     typeof window === 'undefined' ? true : !window.matchMedia('(max-width: 720px)').matches)
@@ -25,7 +25,8 @@ export default function FilterBar({
 
   const activeCount =
     filters.colors.length + filters.types.length +
-    (filters.heightMin !== null || filters.heightMax !== null ? 1 : 0)
+    (filters.heightMin !== null || filters.heightMax !== null ? 1 : 0) +
+    (filters.status !== 'all' ? 1 : 0)
   const hasActiveFilters = Boolean(filters.search) || activeCount > 0
 
   return (
@@ -87,6 +88,24 @@ export default function FilterBar({
       {open && (
         <section className="filters" aria-label="Filters">
           <div className="filters__inner">
+            <div className="filter-group filter-group--status">
+              <h4>Status</h4>
+              <div className="segmented segmented--status" role="group" aria-label="Status">
+                {[
+                  ['all', 'All', statusCounts.all],
+                  ['alive', 'Alive', statusCounts.alive],
+                  ['dead', 'Lost', statusCounts.dead],
+                ].map(([key, label, n]) => (
+                  <button key={key} type="button" className={filters.status === key ? 'active' : ''}
+                    aria-pressed={filters.status === key} onClick={() => onFilterChange({ status: key })}>
+                    {key === 'alive' && <span className="status-dot status-dot--alive" />}
+                    {key === 'dead' && <span className="status-dot status-dot--dead" />}
+                    {label} <em>{n}</em>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="filter-group">
               <h4>Color</h4>
               <div className="chips">

@@ -21,6 +21,35 @@ function parseGViz(text) {
     })
 }
 
+const STATUS_COL = 'Dead or Alive'
+
+/** Anything that says dead (any case, or Hebrew "מת") counts as dead; blank = alive. */
+export function isDeadStatus(value) {
+  return /dead|מת/i.test(String(value ?? ''))
+}
+
+function countWithStatus(rows, name, dead) {
+  return rows.filter(r => r['Name']?.trim() === name && isDeadStatus(r[STATUS_COL]) === dead).length
+}
+
+/** Apply not-yet-visible status changes: flip rows until `target` rows of that name have the status. */
+function applyStatusOps(rows, ops) {
+  if (!ops.length) return rows
+  const out = rows.map(r => ({ ...r }))
+  ops.forEach(({ name, to, target }) => {
+    const dead = to === 'Dead'
+    let have = countWithStatus(out, name, dead)
+    for (const r of out) {
+      if (have >= target) break
+      if (r['Name']?.trim() === name && isDeadStatus(r[STATUS_COL]) !== dead) {
+        r[STATUS_COL] = to
+        have++
+      }
+    }
+  })
+  return out
+}
+
 function groupByVariety(rows) {
   const groups = {}
   rows.forEach(row => {
@@ -40,12 +69,16 @@ function groupByVariety(rows) {
         height: row['Height (cm)'] !== null && row['Height (cm)'] !== '' ? Number(row['Height (cm)']) : null,
         colors,
         type: row['Type']?.trim() || null,
-        count: 0,
+        count: 0,      // living tubers
+        deadCount: 0,  // lost tubers
       }
     }
-    groups[name].count++
+    if (isDeadStatus(row[STATUS_COL])) groups[name].deadCount++
+    else groups[name].count++
   })
-  return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name))
+  return Object.values(groups)
+    .map(v => ({ ...v, total: v.count + v.deadCount, isLost: v.count === 0 && v.deadCount > 0 }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export function useDahlias() {
@@ -54,7 +87,9 @@ export function useDahlias() {
   const [pending, setPending] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const syncRef = useRef({ baseLen: 0, pendingLen: 0, tries: 0 })
+  // Status changes we just wrote: [{ name, to: 'Dead'|'Alive', target }]
+  const [statusOps, setStatusOps] = useState([])
+  const syncRef = useRef({ baseLen: 0, pendingLen: 0, tries: 0, ops: [] })
 
   const load = useCallback(() => {
     // Cache-buster so a reload after a write isn't served a stale copy.
@@ -64,14 +99,17 @@ export function useDahlias() {
         const parsed = parseGViz(text)
         const sync = syncRef.current
         setSheetRows(parsed)
-        if (sync.pendingLen > 0) {
-          if (parsed.length >= sync.baseLen + sync.pendingLen) {
-            // The sheet has caught up: drop the local copies.
-            setPending([])
-            sync.pendingLen = 0
-          } else if (++sync.tries < 6) {
-            setTimeout(load, 5000)
-          }
+        if (sync.pendingLen > 0 && parsed.length >= sync.baseLen + sync.pendingLen) {
+          // The sheet has caught up: drop the local copies.
+          setPending([])
+          sync.pendingLen = 0
+        }
+        if (sync.ops.length) {
+          sync.ops = sync.ops.filter(op => countWithStatus(parsed, op.name, op.to === 'Dead') < op.target)
+          setStatusOps(sync.ops)
+        }
+        if ((sync.pendingLen > 0 || sync.ops.length) && ++sync.tries < 6) {
+          setTimeout(load, 5000)
         }
         setError(null)
         setLoading(false)
@@ -103,7 +141,20 @@ export function useDahlias() {
     setTimeout(load, 3000)
   }, [load, sheetRows.length])
 
-  const rows = useMemo(() => [...sheetRows, ...pending], [sheetRows, pending])
+  const rowsBeforeOps = useMemo(() => [...sheetRows, ...pending], [sheetRows, pending])
+
+  // Mark `count` tubers of a variety as Dead (or Alive) locally, then re-sync.
+  const setStatusLocal = useCallback(({ name, to, count }) => {
+    const current = applyStatusOps(rowsBeforeOps, syncRef.current.ops)
+    const target = countWithStatus(current, name, to === 'Dead') + count
+    const sync = syncRef.current
+    sync.ops = [...sync.ops.filter(op => op.name !== name), { name, to, target }]
+    sync.tries = 0
+    setStatusOps(sync.ops)
+    setTimeout(load, 3000)
+  }, [rowsBeforeOps, load])
+
+  const rows = useMemo(() => applyStatusOps(rowsBeforeOps, statusOps), [rowsBeforeOps, statusOps])
   const varieties = useMemo(() => groupByVariety(rows), [rows])
 
   const allColors = useMemo(() => {
@@ -124,5 +175,5 @@ export function useDahlias() {
     return { min: Math.min(...heights), max: Math.max(...heights) }
   }, [varieties])
 
-  return { varieties, loading, error, allColors, allTypes, heightRange, addLocal, reload: load }
+  return { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal, reload: load }
 }

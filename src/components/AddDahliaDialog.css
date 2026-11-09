@@ -169,3 +169,14 @@
   .add-dialog__head { padding: 14px 16px; }
   .add-dialog__head .bloom { display: none; }
 }
+
+.add-dialog--small { width: min(440px, calc(100vw - 24px)); }
+.status-note { font-size: 15px; color: var(--text); }
+.btn.btn--danger {
+  background: #7a5c52;
+  border-color: #7a5c52;
+  color: #fff;
+  font-weight: 600;
+}
+.btn.btn--danger:hover { background: #5e463f; border-color: #5e463f; color: #fff; }
+.btn.btn--danger:disabled { opacity: .6; cursor: progress; }

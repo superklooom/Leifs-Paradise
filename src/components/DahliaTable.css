@@ -82,3 +82,45 @@ th.active .sort-arrow { opacity: 1; }
   padding: 3px 10px;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Status ---------- */
+.dahlia-table tbody tr.is-lost {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 10px, var(--lost-stripe) 10px 11px),
+    var(--lost-bg);
+}
+.dahlia-table tr.is-lost .td-name__inner { color: var(--text-muted); }
+.dahlia-table tr.is-lost .count-badge { background: var(--lost-art); color: var(--lost-ink); }
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+.status-pill--alive { color: var(--accent-ink); background: var(--accent-soft); }
+.status-pill--partial,
+.status-pill--lost { color: var(--lost-ink); background: var(--lost-art); border: 1px dashed var(--lost-border); }
+.status-pill--lost { text-transform: uppercase; letter-spacing: .06em; font-size: 11.5px; }
+
+.td-actions { white-space: nowrap; text-align: right; }
+.td-actions button {
+  margin-left: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: .55;
+  transition: opacity .15s, border-color .15s, color .15s;
+}
+.dahlia-table tr:hover .td-actions button,
+.td-actions button:focus-visible { opacity: 1; }
+.td-actions button:hover { border-color: var(--lost-ink); color: var(--lost-ink); }
+@media (hover: none) { .td-actions button { opacity: 1; } }

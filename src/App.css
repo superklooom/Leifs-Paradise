@@ -112,6 +112,12 @@
 }
 .theme-toggle:hover { background: rgba(255,255,255,.18); }
 
+.hero__stats > .hero__stat--lost {
+  border-style: dashed;
+  background: rgba(255,255,255,.03);
+}
+.hero__stat--lost dd { color: rgba(246,241,232,.7); }
+
 /* ---------- Main ---------- */
 .app-main {
   max-width: var(--max);

@@ -7,11 +7,12 @@ import DahliaTable from './components/DahliaTable'
 import Bloom from './components/Bloom'
 import ThemeToggle from './components/ThemeToggle'
 import AddDahliaDialog from './components/AddDahliaDialog'
+import StatusDialog from './components/StatusDialog'
 import { SHEET_WRITE_URL } from './config'
 import './App.css'
 
 export default function App() {
-  const { varieties, loading, error, allColors, allTypes, heightRange, addLocal } = useDahlias()
+  const { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal } = useDahlias()
   const [adding, setAdding] = useState(false)
 
   const [view, setView] = useState('grid')
@@ -21,7 +22,9 @@ export default function App() {
     types: [],
     heightMin: null,
     heightMax: null,
+    status: 'all',
   })
+  const [statusTarget, setStatusTarget] = useState(null) // { variety, mode }
   const [sortKey, setSortKey] = useState('name')
   const [sortDir, setSortDir] = useState('asc')
 
@@ -43,6 +46,8 @@ export default function App() {
     const maxH = filters.heightMax ?? heightRange.max
 
     return varieties.filter(v => {
+      if (filters.status === 'alive' && v.count === 0) return false
+      if (filters.status === 'dead' && v.deadCount === 0) return false
       if (filters.search) {
         const q = filters.search.toLowerCase()
         const matchesName = v.name.toLowerCase().includes(q)
@@ -86,6 +91,15 @@ export default function App() {
   const totalTubers = useMemo(() =>
     varieties.reduce((sum, v) => sum + v.count, 0), [varieties])
 
+  const lostTubers = useMemo(() =>
+    varieties.reduce((sum, v) => sum + v.deadCount, 0), [varieties])
+
+  const statusCounts = useMemo(() => ({
+    all: varieties.length,
+    alive: varieties.filter(v => v.count > 0).length,
+    dead: varieties.filter(v => v.deadCount > 0).length,
+  }), [varieties])
+
   const filteredTubers = useMemo(() =>
     filtered.reduce((sum, v) => sum + v.count, 0), [filtered])
 
@@ -107,9 +121,14 @@ export default function App() {
           {!loading && !error && (
             <dl className="hero__stats">
               <div><dt>Varieties</dt><dd>{varieties.length}</dd></div>
-              <div><dt>Tubers</dt><dd>{totalTubers}</dd></div>
+              <div><dt>Living tubers</dt><dd>{totalTubers}</dd></div>
               <div><dt>Colors</dt><dd>{allColors.length}</dd></div>
               <div><dt>Forms</dt><dd>{allTypes.length}</dd></div>
+              {lostTubers > 0 && (
+                <div className="hero__stat--lost">
+                  <dt>Lost</dt><dd>{lostTubers}</dd>
+                </div>
+              )}
             </dl>
           )}
         </div>
@@ -142,6 +161,7 @@ export default function App() {
             view={view}
             onViewChange={setView}
             onAdd={SHEET_WRITE_URL ? () => setAdding(true) : null}
+            statusCounts={statusCounts}
           />
 
           <Dashboard
@@ -155,13 +175,17 @@ export default function App() {
               <div className="state-msg state-msg--empty">
                 <Bloom colors={['White']} size={64} />
                 <p>No dahlias match these filters.</p>
-                <button className="btn" onClick={() => setFilters({ search: '', colors: [], types: [], heightMin: null, heightMax: null })}>Clear filters</button>
+                <button className="btn" onClick={() => setFilters({ search: '', colors: [], types: [], heightMin: null, heightMax: null, status: 'all' })}>Clear filters</button>
               </div>
             ) : view === 'grid' ? (
               <>
                 <div className="dahlia-grid">
                   {sorted.map(v => (
-                    <DahliaCard key={v.name} variety={v} />
+                    <DahliaCard
+                      key={v.name}
+                      variety={v}
+                      onSetStatus={SHEET_WRITE_URL ? (variety, mode) => setStatusTarget({ variety, mode }) : null}
+                    />
                   ))}
                 </div>
               </>
@@ -171,6 +195,7 @@ export default function App() {
                 sortKey={sortKey}
                 sortDir={sortDir}
                 onSort={handleSort}
+                onSetStatus={SHEET_WRITE_URL ? (variety, mode) => setStatusTarget({ variety, mode }) : null}
               />
             )}
           </main>
@@ -183,6 +208,15 @@ export default function App() {
               allColors={allColors}
               allTypes={allTypes}
               onAdded={addLocal}
+            />
+          )}
+
+          {SHEET_WRITE_URL && (
+            <StatusDialog
+              variety={statusTarget?.variety ?? null}
+              mode={statusTarget?.mode ?? 'Dead'}
+              onClose={() => setStatusTarget(null)}
+              onChanged={setStatusLocal}
             />
           )}
         </>
