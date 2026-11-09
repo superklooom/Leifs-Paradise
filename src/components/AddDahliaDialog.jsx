@@ -73,12 +73,13 @@ export default function AddDahliaDialog({ open, onClose, varieties, allColors, a
     const entry = { ...form, name: form.name.trim(), count: Number(form.count) || 1 }
     setState({ busy: true, error: '', done: '' })
     try {
-      await callSheet({ pin: pin.trim(), action: 'add', entry })
+      const res = await callSheet({ pin: pin.trim(), action: 'add', entry })
       onAdded(entry)
       setState({
         busy: false,
         error: '',
-        done: `Added ${entry.count} ${entry.count === 1 ? 'tuber' : 'tubers'} of ${entry.name}.`,
+        done: `Added ${entry.count} ${entry.count === 1 ? 'tuber' : 'tubers'} of ${entry.name}` +
+          (res.row ? ` → row ${res.row}${entry.count > 1 ? `–${res.row + entry.count - 1}` : ''} of “${res.sheet}”.` : '.'),
       })
       setForm(f => ({ ...empty, number: String(Number(f.number) + 1 || '') }))
     } catch (err) {
