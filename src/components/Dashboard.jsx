@@ -23,6 +23,45 @@ const ROSE_BASE    = '#e39abb'
 const CHART_HEIGHT = 240
 const TICK = { fontSize: 13, fontWeight: 600, fill: 'currentColor' }
 
+// Category labels: wrap long names (on spaces and after "/") onto at most two lines.
+const LABEL_MAX_CHARS = 14
+const CHAR_PX = 7.6 // approx. width of one 13px semibold Inter character
+
+function wrapLabel(text) {
+  const words = String(text).replace(/\//g, '/ ').split(' ').filter(Boolean)
+  const lines = []
+  let line = ''
+  for (const w of words) {
+    const joiner = line && !line.endsWith('/') ? ' ' : ''
+    if (line && (line + joiner + w).length > LABEL_MAX_CHARS) {
+      lines.push(line)
+      line = w
+    } else {
+      line += joiner + w
+    }
+  }
+  if (line) lines.push(line)
+  if (lines.length > 2) {
+    const rest = lines.slice(1).reduce((acc, l) => acc + (acc.endsWith('/') ? '' : ' ') + l)
+    lines.splice(1, lines.length - 1, rest)
+  }
+  return lines
+}
+
+function CategoryTick({ x, y, payload }) {
+  const lines = wrapLabel(payload.value)
+  const lineH = 14
+  const startDy = -((lines.length - 1) * lineH) / 2
+  return (
+    <text x={x} y={y} textAnchor="end" dominantBaseline="central" {...TICK}>
+      {lines.map((l, i) => (
+        <tspan key={i} x={x - 8} dy={i === 0 ? startDy : lineH}>{l}</tspan>
+      ))}
+      <title>{payload.value}</title>
+    </text>
+  )
+}
+
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const name = label ?? payload[0]?.payload?.name ?? payload[0]?.payload?.label
@@ -53,6 +92,12 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
   }, [varieties])
+
+  // Size the label column to the longest wrapped line, within sensible bounds.
+  const typeAxisWidth = useMemo(() => {
+    const longest = Math.max(0, ...typeData.flatMap(d => wrapLabel(d.name).map(l => l.length)))
+    return Math.min(140, Math.max(56, Math.ceil(longest * CHAR_PX) + 14))
+  }, [typeData])
 
   const heightData = useMemo(() =>
     HEIGHT_BUCKETS.map(b => ({
@@ -169,8 +214,9 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
               <YAxis
                 type="category"
                 dataKey="name"
-                width={110}
-                tick={TICK}
+                width={typeAxisWidth}
+                tick={<CategoryTick />}
+                interval={0}
                 tickLine={false}
                 axisLine={false}
               />
@@ -211,7 +257,8 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
             >
               <XAxis
                 dataKey="label"
-                tick={TICK}
+                tick={{ ...TICK, fontSize: 12 }}
+                interval={0}
                 tickLine={false}
                 axisLine={false}
               />
