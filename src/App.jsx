@@ -12,7 +12,7 @@ import { SHEET_WRITE_URL } from './config'
 import './App.css'
 
 export default function App() {
-  const { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal } = useDahlias()
+  const { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal, syncIssue, dismissSyncIssue } = useDahlias()
   const [adding, setAdding] = useState(false)
 
   const [view, setView] = useState('grid')
@@ -163,6 +163,14 @@ export default function App() {
             onAdd={SHEET_WRITE_URL ? () => setAdding(true) : null}
             statusCounts={statusCounts}
           />
+
+          {syncIssue && (
+            <div className="sync-issue" role="alert">
+              <strong>The change was saved by the script, but it hasn’t appeared in the sheet this site reads.</strong>
+              <span> It may have been written to a different file or tab. Open the script’s web-app URL in a browser to see where it writes.</span>
+              <button className="link-btn" onClick={dismissSyncIssue}>Dismiss</button>
+            </div>
+          )}
 
           <Dashboard
             varieties={varieties}

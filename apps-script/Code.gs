@@ -15,6 +15,7 @@
  */
 
 const MAX_ROWS_PER_REQUEST = 50;
+const SCRIPT_VERSION = '3';
 
 // The spreadsheet the website reads from. Opening it by ID means the script writes to the
 // right file even if it was created from script.google.com instead of the sheet's menu.
@@ -77,8 +78,36 @@ function doPost(e) {
   }
 }
 
+/**
+ * Open the web app URL in a browser to check the setup: which version is deployed,
+ * which file and tab it writes to, and the last dahlia it sees there.
+ */
 function doGet() {
-  return json_({ ok: true, service: "Leif's Paradise sheet writer" });
+  try {
+    const t = getTable_();
+    const last = lastNamedRow_(t);
+    const lastValues = last > t.headerRow
+      ? t.sheet.getRange(last, 1, 1, t.headers.length).getValues()[0]
+      : [];
+    const lastEntry = {};
+    t.headers.forEach(function (h, i) { if (h) lastEntry[h] = lastValues[i]; });
+    return json_({
+      ok: true,
+      version: SCRIPT_VERSION,
+      spreadsheet: t.ss.getName(),
+      spreadsheetId: t.ss.getId(),
+      tab: t.sheet.getName(),
+      tabIsFirst: t.ss.getSheets()[0].getSheetId() === t.sheet.getSheetId(),
+      headerRow: t.headerRow,
+      headers: t.headers,
+      lastDahliaRow: last,
+      lastRowWithAnything: t.sheet.getLastRow(),
+      lastDahlia: lastEntry,
+      pinConfigured: !!PropertiesService.getScriptProperties().getProperty('PIN'),
+    });
+  } catch (err) {
+    return json_({ ok: false, version: SCRIPT_VERSION, error: String(err && err.message || err) });
+  }
 }
 
 function addEntry_(entry) {

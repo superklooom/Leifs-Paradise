@@ -89,6 +89,8 @@ export function useDahlias() {
   const [error, setError] = useState(null)
   // Status changes we just wrote: [{ name, to: 'Dead'|'Alive', target }]
   const [statusOps, setStatusOps] = useState([])
+  // Set when a write was confirmed by the script but never showed up in the sheet we read.
+  const [syncIssue, setSyncIssue] = useState(false)
   const syncRef = useRef({ baseLen: 0, pendingLen: 0, tries: 0, ops: [] })
 
   const load = useCallback(() => {
@@ -108,8 +110,11 @@ export function useDahlias() {
           sync.ops = sync.ops.filter(op => countWithStatus(parsed, op.name, op.to === 'Dead') < op.target)
           setStatusOps(sync.ops)
         }
-        if ((sync.pendingLen > 0 || sync.ops.length) && ++sync.tries < 6) {
-          setTimeout(load, 5000)
+        if (sync.pendingLen > 0 || sync.ops.length) {
+          if (++sync.tries < 6) setTimeout(load, 5000)
+          else setSyncIssue(true)
+        } else {
+          setSyncIssue(false)
         }
         setError(null)
         setLoading(false)
@@ -175,5 +180,5 @@ export function useDahlias() {
     return { min: Math.min(...heights), max: Math.max(...heights) }
   }, [varieties])
 
-  return { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal, reload: load }
+  return { varieties, loading, error, allColors, allTypes, heightRange, addLocal, setStatusLocal, syncIssue, dismissSyncIssue: () => setSyncIssue(false), reload: load }
 }
