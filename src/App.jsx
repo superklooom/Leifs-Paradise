@@ -100,9 +100,9 @@ export default function App() {
     <div className="app">
       <header className="hero">
         <div className="hero__blooms" aria-hidden="true">
-          <Bloom colors={['Pink', 'Dark Pink']} size={260} className="hero__bloom hero__bloom--a" />
-          <Bloom colors={['Orange', 'Yellow']} size={170} className="hero__bloom hero__bloom--b" />
-          <Bloom colors={['Lavender', 'White']} size={120} className="hero__bloom hero__bloom--c" />
+          <Bloom colors={['Pink', 'Dark Pink']} type="Dinnerplate" size={260} className="hero__bloom hero__bloom--a" />
+          <Bloom colors={['Orange', 'Yellow']} type="Cactus" size={170} className="hero__bloom hero__bloom--b" />
+          <Bloom colors={['Lavender', 'White']} type="Ball" size={120} className="hero__bloom hero__bloom--c" />
         </div>
         <div className="hero__inner">
           <div className="hero__top">

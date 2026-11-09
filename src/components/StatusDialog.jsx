@@ -51,7 +51,7 @@ export default function StatusDialog({ variety, mode, onClose, onChanged }) {
       {variety && (
         <form className="add-dialog__panel" onSubmit={submit}>
           <header className="add-dialog__head">
-            <Bloom colors={variety.colors} size={52} className={lost ? 'bloom--wilted' : ''} />
+            <Bloom colors={variety.colors} type={variety.type} size={52} className={lost ? 'bloom--wilted' : ''} />
             <div>
               <h2>{lost ? 'Mark as lost' : 'Bring back'}</h2>
               <p>{variety.name}</p>

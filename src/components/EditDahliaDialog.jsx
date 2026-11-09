@@ -113,7 +113,7 @@ export default function EditDahliaDialog({ variety, varieties, allColors, allTyp
       {variety && form && (
         <form className="add-dialog__panel" onSubmit={e => { e.preventDefault(); save() }}>
           <header className="add-dialog__head">
-            <Bloom colors={form.colors} size={52} className={form.alive === 0 && form.dead > 0 ? 'bloom--wilted' : ''} />
+            <Bloom colors={form.colors} type={form.type} size={52} className={form.alive === 0 && form.dead > 0 ? 'bloom--wilted' : ''} />
             <div>
               <h2>Edit dahlia</h2>
               <p>{variety.name} · {variety.count} living{variety.deadCount ? ` · ${variety.deadCount} lost` : ''}</p>

@@ -9,7 +9,7 @@ export default function DahliaCard({ variety, onSetStatus, onEdit }) {
   return (
     <article className={`dahlia-card ${isLost ? 'is-lost' : ''}`} style={{ '--tint': tint }}>
       <div className="dahlia-card__art">
-        <Bloom colors={colors} size={112} className={isLost ? 'bloom--wilted' : ''} />
+        <Bloom colors={colors} type={type} size={112} className={isLost ? 'bloom--wilted' : ''} />
         {dahliaNumber && <span className="dahlia-card__number">No. {dahliaNumber}</span>}
         {isLost ? (
           <span className="dahlia-card__lost-badge">

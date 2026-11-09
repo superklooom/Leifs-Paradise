@@ -98,7 +98,7 @@ export default function AddDahliaDialog({ open, onClose, varieties, allColors, a
     >
       <form className="add-dialog__panel" onSubmit={submit}>
         <header className="add-dialog__head">
-          <Bloom colors={form.colors} size={52} />
+          <Bloom colors={form.colors} type={form.type} size={52} />
           <div>
             <h2>Add a dahlia</h2>
             <p>{existing ? 'Adds more tubers to an existing variety.' : 'Writes new rows straight into the Google Sheet.'}</p>

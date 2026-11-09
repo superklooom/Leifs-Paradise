@@ -39,7 +39,7 @@ export default function DahliaTable({ varieties, sortKey, sortDir, onSort, onSet
         <tbody>
           {varieties.map(v => (
             <tr key={v.name} className={v.isLost ? 'is-lost' : ''}>
-              <td className="td-name"><span className="td-name__inner"><Bloom colors={v.colors} size={30} className={v.isLost ? 'bloom--wilted' : ''} />{v.name}</span></td>
+              <td className="td-name"><span className="td-name__inner"><Bloom colors={v.colors} type={v.type} size={30} className={v.isLost ? 'bloom--wilted' : ''} />{v.name}</span></td>
               <td className="td-number">{v.dahliaNumber ?? '—'}</td>
               <td>
                 <div className="td-colors">
