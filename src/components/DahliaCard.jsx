@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import Bloom from './Bloom'
 import { getColorHex } from '../utils/colors'
 import './DahliaCard.css'
@@ -5,10 +6,38 @@ import './DahliaCard.css'
 export default function DahliaCard({ variety, onSetStatus, onEdit }) {
   const { name, dahliaNumber, height, colors, type, count, deadCount, isLost } = variety
   const tint = isLost ? '#9a948c' : getColorHex(colors[0])
+  const hasActions = Boolean(onSetStatus || onEdit)
+
+  // On touch screens the actions (and the lost count) stay hidden until the picture is tapped.
+  const [open, setOpen] = useState(false)
+  const cardRef = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const close = e => { if (!cardRef.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('pointerdown', close)
+    return () => document.removeEventListener('pointerdown', close)
+  }, [open])
+
+  function toggleFromArt(e) {
+    if (!hasActions || e.target.closest('button')) return
+    setOpen(o => !o)
+  }
 
   return (
-    <article className={`dahlia-card ${isLost ? 'is-lost' : ''}`} style={{ '--tint': tint }}>
-      <div className="dahlia-card__art">
+    <article
+      ref={cardRef}
+      className={`dahlia-card ${isLost ? 'is-lost' : ''} ${open ? 'is-open' : ''}`}
+      style={{ '--tint': tint }}
+    >
+      <div
+        className={`dahlia-card__art ${hasActions ? 'is-tappable' : ''}`}
+        onClick={toggleFromArt}
+        role={hasActions ? 'button' : undefined}
+        tabIndex={hasActions ? 0 : undefined}
+        aria-expanded={hasActions ? open : undefined}
+        aria-label={hasActions ? `${name}: show options` : undefined}
+        onKeyDown={e => { if (hasActions && (e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); setOpen(o => !o) } }}
+      >
         <Bloom colors={colors} type={type} size={112} className={isLost ? 'bloom--wilted' : ''} />
         {dahliaNumber && <span className="dahlia-card__number">No. {dahliaNumber}</span>}
         {isLost ? (
@@ -32,16 +61,16 @@ export default function DahliaCard({ variety, onSetStatus, onEdit }) {
         {(onSetStatus || onEdit) && (
           <div className="dahlia-card__actions">
             {onEdit && (
-              <button type="button" onClick={() => onEdit(variety)} aria-label={`Edit ${name}`}>
+              <button type="button" onClick={() => { setOpen(false); onEdit(variety) }} aria-label={`Edit ${name}`}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
                 Edit
               </button>
             )}
             {onSetStatus && count > 0 && (
-              <button type="button" onClick={() => onSetStatus(variety, 'Dead')}>Mark lost</button>
+              <button type="button" onClick={() => { setOpen(false); onSetStatus(variety, 'Dead') }}>Mark lost</button>
             )}
             {onSetStatus && deadCount > 0 && (
-              <button type="button" onClick={() => onSetStatus(variety, 'Alive')}>Revive</button>
+              <button type="button" onClick={() => { setOpen(false); onSetStatus(variety, 'Alive') }}>Revive</button>
             )}
           </div>
         )}

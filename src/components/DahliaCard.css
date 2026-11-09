@@ -196,8 +196,22 @@
 }
 .dahlia-card:hover .dahlia-card__actions,
 .dahlia-card:focus-within .dahlia-card__actions { opacity: 1; transform: none; }
+/* Touch screens: no hover, so the picture is tapped to reveal the options. */
+.dahlia-card__art.is-tappable { -webkit-tap-highlight-color: transparent; }
+.dahlia-card.is-open .dahlia-card__actions { opacity: 1; transform: none; }
+.dahlia-card__actions { pointer-events: none; }
+.dahlia-card:hover .dahlia-card__actions,
+.dahlia-card:focus-within .dahlia-card__actions,
+.dahlia-card.is-open .dahlia-card__actions { pointer-events: auto; }
+
 @media (hover: none) {
-  .dahlia-card__actions { opacity: 1; transform: none; }
+  .dahlia-card__art.is-tappable { cursor: pointer; }
+  /* Only the living count shows until the card is opened. */
+  .dahlia-card:not(.is-open) .dahlia-card__dead { display: none; }
+  /* Hover/focus don't count on touch; only an explicit tap opens the card. */
+  .dahlia-card:not(.is-open) .dahlia-card__actions { opacity: 0; transform: translateY(4px); pointer-events: none; }
+  .dahlia-card.is-open .dahlia-card__art .bloom { opacity: .45; transition: opacity .2s; }
+  .dahlia-card:hover { transform: none; }
 }
 .dahlia-card__actions button {
   display: inline-flex;
