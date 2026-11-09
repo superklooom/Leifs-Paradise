@@ -4,6 +4,8 @@ import FilterBar from './components/FilterBar'
 import Dashboard from './components/Dashboard'
 import DahliaCard from './components/DahliaCard'
 import DahliaTable from './components/DahliaTable'
+import Bloom from './components/Bloom'
+import ThemeToggle from './components/ThemeToggle'
 import './App.css'
 
 export default function App() {
@@ -86,21 +88,33 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="app-header__inner">
-          <div className="app-header__title">
-            <span className="app-header__icon">🌸</span>
-            <div>
-              <h1>Leif's Paradise</h1>
-              <p>{varieties.length} varieties · {totalTubers} tubers total</p>
-            </div>
+      <header className="hero">
+        <div className="hero__blooms" aria-hidden="true">
+          <Bloom colors={['Pink', 'Dark Pink']} size={260} className="hero__bloom hero__bloom--a" />
+          <Bloom colors={['Orange', 'Yellow']} size={170} className="hero__bloom hero__bloom--b" />
+          <Bloom colors={['Lavender', 'White']} size={120} className="hero__bloom hero__bloom--c" />
+        </div>
+        <div className="hero__inner">
+          <div className="hero__top">
+            <span className="hero__eyebrow">A dahlia catalogue</span>
+            <ThemeToggle />
           </div>
+          <h1 className="hero__title">Leif’s Paradise</h1>
+          <p className="hero__lede">Every variety in the garden: its colors, form, height and how many tubers are waiting for spring.</p>
+          {!loading && !error && (
+            <dl className="hero__stats">
+              <div><dt>Varieties</dt><dd>{varieties.length}</dd></div>
+              <div><dt>Tubers</dt><dd>{totalTubers}</dd></div>
+              <div><dt>Colors</dt><dd>{allColors.length}</dd></div>
+              <div><dt>Forms</dt><dd>{allTypes.length}</dd></div>
+            </dl>
+          )}
         </div>
       </header>
 
       {loading && (
         <div className="state-msg">
-          <div className="spinner" />
+          <Bloom colors={['Pink']} size={40} className="spinner-bloom" />
           Loading your dahlias…
         </div>
       )}
@@ -121,6 +135,7 @@ export default function App() {
             heightRange={heightRange}
             totalCount={varieties.length}
             filteredCount={filtered.length}
+            filteredTubers={filteredTubers}
             view={view}
             onViewChange={setView}
           />
@@ -133,14 +148,13 @@ export default function App() {
 
           <main className="app-main">
             {sorted.length === 0 ? (
-              <div className="state-msg">
-                No dahlias match the current filters.
+              <div className="state-msg state-msg--empty">
+                <Bloom colors={['White']} size={64} />
+                <p>No dahlias match these filters.</p>
+                <button className="btn" onClick={() => setFilters({ search: '', colors: [], types: [], heightMin: null, heightMax: null })}>Clear filters</button>
               </div>
             ) : view === 'grid' ? (
               <>
-                <div className="grid-summary">
-                  {filtered.length} {filtered.length === 1 ? 'variety' : 'varieties'} · {filteredTubers} tubers
-                </div>
                 <div className="dahlia-grid">
                   {sorted.map(v => (
                     <DahliaCard key={v.name} variety={v} />

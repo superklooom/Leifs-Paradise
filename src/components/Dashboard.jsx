@@ -3,36 +3,8 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis,
 } from 'recharts'
+import { getColorHex } from '../utils/colors'
 import './Dashboard.css'
-
-const COLOR_HEX = {
-  Red: '#c0392b',
-  Pink: '#e91e8c',
-  Orange: '#e67e22',
-  Yellow: '#f1c40f',
-  White: '#f0ece4',
-  Purple: '#8e44ad',
-  Lavender: '#c39bd3',
-  Burgundy: '#6c1f2e',
-  Salmon: '#fa8072',
-  Coral: '#ff6b6b',
-  Peach: '#ffcba4',
-  Cream: '#fff8dc',
-  Violet: '#7f00ff',
-  Lilac: '#c8a2c8',
-  Magenta: '#c2185b',
-  'Dark Red': '#8b0000',
-  'Dark Pink': '#e75480',
-}
-
-function getColorHex(name) {
-  if (COLOR_HEX[name]) return COLOR_HEX[name]
-  const lower = name.toLowerCase()
-  for (const [key, val] of Object.entries(COLOR_HEX)) {
-    if (lower.includes(key.toLowerCase())) return val
-  }
-  return '#aaa'
-}
 
 // filterMin/filterMax are what get written to filter state (null = unbounded)
 // countMin/countMax are used to bucket the data for display
@@ -43,17 +15,13 @@ const HEIGHT_BUCKETS = [
   { label: '>120 cm',   filterMin: 121,  filterMax: null,  countMin: 121, countMax: 9999 },
 ]
 
-const GREEN_ACTIVE = '#2d6a4f'
-const GREEN_BASE   = '#74b49b'
-const BLUE_ACTIVE  = '#2c6e8a'
-const BLUE_BASE    = '#7db0c8'
+const GREEN_ACTIVE = '#2b6a43'
+const GREEN_BASE   = '#7fb894'
+const ROSE_ACTIVE  = '#b23a6b'
+const ROSE_BASE    = '#e39abb'
 
-const CHART_HEIGHT = 300
-
-function renderPieLabel({ name, percent }) {
-  if (percent < 0.05) return ''
-  return `${name} ${Math.round(percent * 100)}%`
-}
+const CHART_HEIGHT = 240
+const TICK = { fontSize: 13, fontWeight: 600, fill: 'currentColor' }
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -128,8 +96,12 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
       <div className="dashboard__inner">
 
         {/* Color — Pie chart */}
-        <div className="dashboard__panel">
-          <div className="dashboard__panel-title">By Color</div>
+        <div className="dashboard__panel dashboard__panel--donut">
+          <div className="dashboard__panel-head">
+            <h3>By color</h3>
+            <span>Tap a slice to filter</span>
+          </div>
+          <div className="donut-wrap">
           <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
             <PieChart>
               <Pie
@@ -138,9 +110,10 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={90}
-                label={renderPieLabel}
-                labelLine={true}
+                innerRadius={62}
+                outerRadius={100}
+                paddingAngle={1.5}
+                cornerRadius={3}
                 onClick={(entry) => toggleColor(entry.name)}
                 cursor="pointer"
               >
@@ -152,20 +125,40 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
                       key={entry.name}
                       fill={getColorHex(entry.name)}
                       opacity={dimmed ? 0.3 : 1}
-                      stroke={active ? '#333' : 'rgba(0,0,0,0.1)'}
+                      stroke={active ? 'currentColor' : 'rgba(0,0,0,0.12)'}
                       strokeWidth={active ? 2.5 : 1}
                     />
                   )
                 })}
               </Pie>
-              <Tooltip content={<ChartTooltip />} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(127,127,127,0.08)' }} />
             </PieChart>
           </ResponsiveContainer>
+          <div className="donut-center" aria-hidden="true">
+            <strong>{colorData.length}</strong>
+            <span>colors</span>
+          </div>
+          </div>
+          <div className="legend">
+            {colorData.slice(0, 8).map(d => (
+              <button
+                key={d.name}
+                className={`legend__item ${filters.colors.includes(d.name) ? 'active' : ''}`}
+                onClick={() => toggleColor(d.name)}
+              >
+                <span className="dot" style={{ background: getColorHex(d.name) }} />
+                {d.name} <em>{d.value}</em>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Type — horizontal bar chart */}
         <div className="dashboard__panel">
-          <div className="dashboard__panel-title">By Type</div>
+          <div className="dashboard__panel-head">
+            <h3>By form</h3>
+            <span>Tubers per form</span>
+          </div>
           <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
             <BarChart
               data={typeData}
@@ -177,14 +170,15 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
                 type="category"
                 dataKey="name"
                 width={110}
-                tick={{ fontSize: 14, fontWeight: 700 }}
+                tick={TICK}
                 tickLine={false}
                 axisLine={false}
               />
-              <Tooltip content={<ChartTooltip />} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(127,127,127,0.08)' }} />
               <Bar
                 dataKey="value"
-                radius={[0, 4, 4, 0]}
+                radius={[0, 6, 6, 0]}
+                barSize={18}
                 onClick={toggleType}
                 cursor="pointer"
               >
@@ -206,7 +200,10 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
 
         {/* Height — vertical bar chart */}
         <div className="dashboard__panel">
-          <div className="dashboard__panel-title">By Height</div>
+          <div className="dashboard__panel-head">
+            <h3>By height</h3>
+            <span>Tubers per range</span>
+          </div>
           <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
             <BarChart
               data={heightData}
@@ -214,15 +211,16 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
             >
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 14, fontWeight: 700 }}
+                tick={TICK}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis hide />
-              <Tooltip content={<ChartTooltip />} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(127,127,127,0.08)' }} />
               <Bar
                 dataKey="value"
-                radius={[4, 4, 0, 0]}
+                radius={[6, 6, 0, 0]}
+                barSize={44}
                 onClick={toggleHeight}
                 cursor="pointer"
               >
@@ -232,7 +230,7 @@ export default function Dashboard({ varieties, filters, onFilterChange }) {
                   return (
                     <Cell
                       key={entry.label}
-                      fill={active ? BLUE_ACTIVE : BLUE_BASE}
+                      fill={active ? ROSE_ACTIVE : ROSE_BASE}
                       opacity={dimmed ? 0.3 : 1}
                     />
                   )
